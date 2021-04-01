@@ -8,10 +8,11 @@ There are two sets of scripts included in the repository .
 Set 1) Are the scripts required for downloading the source COVID-19 case and deaths data 
 and processing it to produce the outputs presented in the app 
 
-CLIC_Brazil_Script_directories.R
+**CLIC_Brazil_Script_directories.R**  - This is used to hardcode the directory paths and will need to be edited to reflect your local
+environment, You will need to edit the reference to this which is the header for each R script
 
 
-CLIC_Brazil_Data_update_batch.R
+CLIC_Brazil_Data_update_batch.R 
 CLIC_Brazil_Dataload.R
 CLIC_Brazil_Data_cleaning.R
 CLIC_Brazil_standardisation_implementation.R
