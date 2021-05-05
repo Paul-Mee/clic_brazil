@@ -1,0 +1,125 @@
+
+input[type="number"] {
+  max-width: 80%;
+}
+
+div.outer {
+  position: fixed;
+  top: 35px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Customize fonts */
+body, label, input, button, select { 
+  font-family: 'Helvetica Neue', Helvetica;
+  font-weight: 200;
+}
+h1, h2, h3, h4 { font-weight: 400; }
+
+#controls {
+  /* Appearance */
+  background-color: white;
+  padding: 0 10px 10px 10px;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.85;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+}
+
+#controls:hover {
+  /* Fade in while hovering */
+  opacity: 0.75;
+  transition-delay: 0;
+}
+
+#logo {
+  /* Appearance */
+  background-color: transparent;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.25;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+}
+
+#logo:hover {
+  /* Fade in while hovering */
+  opacity: 0.95;
+  transition-delay: 0;
+}
+
+.btn {
+  transition-duration: 0.25s;
+  color: #0D5257;
+  background-color: white;
+  border-color: #0D5257;
+}
+
+.btn:hover {
+  color: white;
+  background-color: #0D5257;
+  border-color: #0D5257;
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+}
+
+.navbar-default:hover {
+
+}
+
+.navbar-default .navbar-nav > .active > a {
+  color: white;
+  background-color: #00BF6F !important;
+}
+
+.navbar-default .navbar-nav > li > a:hover {
+  color: #00BF6F;
+}
+
+.navbar-default .navbar-nav > li > a {
+  color: white;
+}
+
+.navbar-default .navbar-toggle .icon-bar {
+  background-color: white;
+}
+
+.navbar-default .navbar-brand:hover {
+  color: white !important;
+}
+
+.navbar-default .navbar-brand {
+  color: white;
+  padding: 2.5px;
+  padding-right: 15px;
+}
+
+.heading_box {
+  margin-top: 0px;
+  margin-bottom: 20px;
+  padding: 20px 20px 15px 20px;
+  border: 1px solid #A7A8AA;
+  width: 70%;
+  box-shadow: 1px 1px 2px 2px #A7A8AA;
+  border-radius: 5px;
+}
+.heading_box p {
+  font-size: 16px;
+  font-color: #69716F;
+  line-height: 1;
+  margin: 0 0 6px;
+}
+.heading_box strong {
+  color: #0D5257;
+  margin: 0 0 10px;
+}
+
+.inline label.control-label, .inline .selectize-control.single {
+  display: table-cell;
+  text-align: left;
+  vertical-align: middle;
+}
