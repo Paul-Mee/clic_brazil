@@ -1,4 +1,6 @@
-
+## Additions for benchmarking code
+rm(list=ls())
+start_time <- Sys.time()
 # Required packages
 if(!require(magrittr)) install.packages("magrittr", repos = "http://cran.us.r-project.org")
 if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
@@ -54,7 +56,7 @@ total         <- readRDS("input_data/current_total_cases.RDS")
 load("input_data/AUCplot.rdata")
 load("input_data/AUCDF.rdata")
 
-# Look at max Rt value by group 
+# Look at max Rt value by group
 max_Rt_vals <- all_plot_data %>% group_by(city_state) %>% top_n(1,Rt_Smooth)
 
 # city/state combinations
@@ -90,14 +92,14 @@ Brazil_cases_sp <- Brazil_cases_sp[Brazil_cases_sp$date_end <= DateUntil, ]
 Brazil_cases_sp <- Brazil_cases_sp[!is.na(Brazil_cases_sp$X), ]
 
 # trim to just latest number of cumulative cases / incidence
-Brazil_cases_cum_cases <- data.table(aggregate(cum_cases ~ Area + X + Y, 
+Brazil_cases_cum_cases <- data.table(aggregate(cum_cases ~ Area + X + Y,
                                                data = Brazil_cases_sp, FUN = max))
 
 # extract dates from cv data
 min_date <- as.Date(min(Brazil_cases_sp$date_end),"%Y-%m-%d")
 max_date <- as.Date(max(Brazil_cases_sp$date_end),"%Y-%m-%d")
 
-Brazil_cases_time <- aggregate(cum_cases ~ date_end, 
+Brazil_cases_time <- aggregate(cum_cases ~ date_end,
                                data = Brazil_cases_sp, FUN = sum)
 
 Brazil_cases_sp2   <- Brazil_cases_sp[Brazil_cases_sp$cum_cases > 50, ]
@@ -105,25 +107,22 @@ Brazil_cases_areas <- aggregate(Area ~ date_end, data = Brazil_cases_sp2,
                                 FUN = length)
 rm(Brazil_cases_sp2)
 
-# preprocessing to re-route beginign of the epidemic depending 
-# on chosen area
-# x_dat <- re.route.origin(BigStandard$standardised_incidence)
-# 
-# # and add intervention timing data
-# x_dat <- district.start.date.find(x_dat, BigStandard$Intervention)
-# 
-# 
-# 
-# # Filter to only those areas with >50 cum_cases
-# # x_dat %<>% dplyr::filter(cum_cases > 400)
-# 
-# x_dat$Area   <- as.character(x_dat$Area)
-# # x_dat$Region <- str_sub(x_dat$Area, start= -2)
-# x_dat %<>% inner_join(states) %>%
-#   data.table()
-# 
-# saveRDS(x_dat, file = "./input_data/x_dat.RDS")
-x_dat <- readRDS("./input_data/x_dat.RDS")
+x_dat <- re.route.origin(BigStandard$standardised_incidence)
+
+# and add intervention timing data
+x_dat <- district.start.date.find(x_dat, BigStandard$Intervention)
+
+
+
+# Filter to only those areas with >50 cum_cases
+# x_dat %<>% dplyr::filter(cum_cases > 400)
+
+x_dat$Area   <- as.character(x_dat$Area)
+# x_dat$Region <- str_sub(x_dat$Area, start= -2)
+x_dat %<>% inner_join(states) %>%
+  data.table()
+
+
 
 
 timeSUM <- cbind(aggregate(standardised_cases ~ Days_since_start,
@@ -133,15 +132,13 @@ timeSUM <- cbind(aggregate(standardised_cases ~ Days_since_start,
                  aggregate(standardised_cases ~ Days_since_start,
                            data=x_dat, FUN=quantile, probs = 0.66)[, 2])
 
-# preprocessing to re-route beginign of the epidemic depending on chosen area
-# z_dat <- re.route.origin(BigStandard$standardised_incidence,
-#                          Zerotrim = FALSE)
-# 
-# # and add intervention timing data
-# z_dat <- district.start.date.find(z_dat, BigStandard$Intervention)
-# 
-# saveRDS(z_dat, file = "./input_data/z_dat.RDS")
-z_dat <- readRDS("./input_data/z_dat.RDS")
+z_dat <- re.route.origin(BigStandard$standardised_incidence,
+                         Zerotrim = FALSE)
+
+# and add intervention timing data
+z_dat <- district.start.date.find(z_dat, BigStandard$Intervention)
+
+
 
 # all interventions
 int_opts <- colnames(z_dat)[grepl("start", colnames(z_dat))]
@@ -152,8 +149,8 @@ int_opts <- int_opts[!int_opts == "Days_since_start"]
 int_first <- matrix(NA, nrow = length(unique(z_dat$Area)),
                     ncol = length(int_opts))
 for(i in 1:length(int_opts)){
-  int_first[, i] = aggregate(as.formula(paste0(int_opts[i], 
-                                               " ~ Area")), 
+  int_first[, i] = aggregate(as.formula(paste0(int_opts[i],
+                                               " ~ Area")),
                              data = z_dat, FUN = min)[, 2]
 }
 colnames(int_first)= gsub("_start", "", int_opts)
@@ -186,7 +183,7 @@ colnames(Int_long)[3] <- "Intervention_type"
 # trim to just latest number of cumulative cases / incidence
 popup <- Brazil_cases_cum_cases$cum_cases
 
-my_bks <- c(0, round(exp(seq(log1p(0), 
+my_bks <- c(0, round(exp(seq(log1p(0),
                              log1p(max(Brazil_cases_cum_cases$cum_cases)),
                              length = 5))))
 
@@ -203,6 +200,26 @@ st_crs(db)   <- 4326
 
 # Convert to spatial points data frame
 spatial      <- as(db, "Spatial")
+
+areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
+
+data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
+
+
+end_time <- Sys.time()
+orig_time <- end_time - start_time
+orig_time
+rm(list= ls()[(ls() %in% c('start_time','end_time'))])
+save.image( file = "./input_data/app_files.RDS")
+
+### Test of speed difference with data load of preprocessed data 
+rm(list=ls())
+start_time <- Sys.time()
+load(file = "./input_data/app_files.RDS")
+end_time <- Sys.time()
+new_time <- end_time - start_time
+new_time
+
 
 basemap <-  leaflet(data = spatial) %>%
   htmlwidgets::onRender("function(el, x) {
@@ -252,9 +269,6 @@ municipal_plot <- function(Brazil_cases_areas, plot_date) {
   g1
 }
 
-areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
-
-data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
 
 thematic::thematic_shiny()
 
