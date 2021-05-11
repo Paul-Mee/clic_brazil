@@ -38,11 +38,11 @@ app_title <- "COVID-19 Local Information Comparison (CLIC Brazil)"
 
 options(shiny.sanitize.errors = TRUE)
 
-start_time <- Sys.time()
+## Loading pre-computed data and plot files 
+
 load(file = "./input_data/app_files.RDS")
-end_time <- Sys.time()
-new_time <- end_time - start_time
-new_time
+load(file = "./input_data/Trends_plots_list.RDS")
+
 
 
 basemap <-  leaflet(data = spatial) %>%
