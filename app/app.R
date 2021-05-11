@@ -93,9 +93,8 @@ municipal_plot <- function(Brazil_cases_areas, plot_date) {
   g1
 }
 
-areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
-
-data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
+# areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
+# data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
 
 thematic::thematic_shiny()
 
@@ -105,7 +104,7 @@ ui <- navbarPage(
   
   theme=bs_theme(version=4,
                  bootswatch = "minty",
-                 base_font = font_google("Oswald")) %>%
+                 base_font = font_google("Roboto")) %>%
     bs_add_rules(
       sprintf('@import "%s"', 
               "styles.css")
