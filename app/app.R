@@ -235,9 +235,7 @@ ui <- navbarPage(
              mainPanel(
                tabPanel("",
                         plotOutput("p3", height="900px"),
-                        br(),
-                        # uiOutput("list1"),
-                        br(), br()
+                        br(), br(), br()
                         
                )
              )
@@ -417,6 +415,33 @@ ui <- navbarPage(
            tags$br(), tags$br()
   ),
   
+  tabPanel(title="Download data",
+           tags$h4("Download local area data"),
+           numericInput("maxrows",
+                        "Number of rows to show", 5),
+           downloadButton("downloadCsv",
+                          "Download data as CSV"),
+           tags$br(), tags$br(),
+           verbatimTextOutput("rawtable"),
+           tags$br(),tags$br(),
+           tags$h4("Download Rt data"),
+           numericInput("maxrows2",
+                        "Number of rows to show", 5),
+           downloadButton("downloadCsv2",
+                          "Download Rt data as CSV"),
+           tags$br(), tags$br(),
+           verbatimTextOutput("rawtable_rt"),
+           tags$br(),tags$br(),
+           tags$h4("Download covariates data"),
+           numericInput("maxrows3",
+                        "Number of rows to show", 5),
+           downloadButton("downloadCsv3",
+                          "Download covariates as CSV"),
+           tags$br(), tags$br(),
+           verbatimTextOutput("rawtable_covars"),
+           tags$br(),tags$br()
+  ),
+  
   tabPanel(title="About this site",
            tags$div(
              tags$h4("Data Sources"),
@@ -464,7 +489,50 @@ ui <- navbarPage(
              "WC1E 7HT",
              tags$br(), tags$br(), tags$br()
            )
+  ),
+  tabPanel(title="How to use",
+           tags$div(
+             tags$h3("COVID-19 Local Information Comparison"),
+             tags$h4("(CLIC Brazil)"),
+             tags$br(),
+             tags$h4("Introduction"),
+             uiOutput("text8"),
+             
+             tags$br(),
+             tags$h4("National Overview tab"),
+             uiOutput("text9"),
+             
+             tags$br(),
+             tags$h4("Local area comparison tab"),
+             uiOutput("text10"),
+             
+             tags$br(),
+             tags$h5("Cumulative case plot"),
+             imageOutput(outputId="saopaulo",
+                         inline=TRUE),
+             
+             tags$br(),tags$br(),
+             tags$h5("Timing of interventions plot"),
+             uiOutput("text11"),
+             tags$br(),
+             imageOutput("boxplot",
+                         inline=TRUE),
+             
+             tags$br(),tags$br(),
+             tags$h4("Trends tab"),
+             uiOutput("text12"),
+             tags$br(),
+             imageOutput("trends",
+                         inline=TRUE),
+             tags$br(),tags$br(),
+             
+             tags$h4("Data download tab"),
+             uiOutput("text13"),
+             
+             tags$br(), tags$br(), tags$br()
+           )
   )
+  
 )
 
 server <- function(input, output, session) {
@@ -1028,6 +1096,36 @@ server <- function(input, output, session) {
       auc_data()
     })
     
+    # Download Data tab
+    out_dat <- reactive({
+      out_data <- re.route.origin(BigStandard$standardised_incidence)
+      
+      # and add intervention timign data
+      out_data <- district.start.date.find(out_data, BigStandard$Intervention)
+      
+      names(out_data) <- tolower(names(out_data))
+      out_data
+    })
+    
+    output$rawtable <- renderPrint({
+      orig <- options(width = 1000)
+      print(head(out_dat(), n=input$maxrows), row.names = FALSE)
+      options(orig)
+    })
+    
+    output$rawtable_rt <- renderPrint({
+      orig <- options(width = 1000)
+      print(head(data.table(all_plot_data), 
+                 n=input$maxrows2), row.names = FALSE)
+      options(orig)
+    })
+    
+    output$rawtable_covars <- renderPrint({
+      orig <- options(width = 1000)
+      print(head(data.table(BigStandard$standardised_incidence), 
+                 n=input$maxrows3), row.names = FALSE)
+      options(orig)
+    })
     
     output$text1 <- renderUI({
 
@@ -1520,7 +1618,38 @@ server <- function(input, output, session) {
   </div>
 </div>")
   })
+ 
+  output$saopaulo <- renderImage({
+    
+    return(list(
+      src = "input_data/saopaulo.png",
+      contentType = "image/png",
+      alt = "Image",
+      width = "50%", height = "250"
+    ))  
+  }, deleteFile = FALSE)
   
+  output$boxplot <- renderImage({
+    
+    return(list(
+      src = "input_data/boxplot.jpg",
+      contentType = "image/jpg",
+      alt = "Image",
+      width = "50%", height = "250"
+    ))  
+  }, deleteFile = FALSE)
+  
+  output$trends <- renderImage({
+    
+    return(list(
+      src = "input_data/trends.jpg",
+      contentType = "image/jpg",
+      alt = "Image",
+      width = "50%", height = "250"
+    ))  
+  }, deleteFile = FALSE)
+  
+   
 }
 
 shinyApp(ui, server)
