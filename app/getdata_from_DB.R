@@ -153,11 +153,20 @@ try({
 })
 
 
-target10 <- "Trends_plots_test2021_04_27"
+target10 <- "Trends_plots_list"
 sear10   <- drop_search(target10)
 try({
     drop_download(sear10$matches[[1]]$metadata$path_display,
                   local_path = 'input_data/',
                   overwrite=TRUE)
 })
+
+target11 <- "app_files.RDS"
+sear11   <- drop_search(target11)
+try({
+    drop_download(sear11$matches[[1]]$metadata$path_display,
+                  local_path = 'input_data/',
+                  overwrite=TRUE)
+})
+
 
