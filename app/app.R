@@ -93,10 +93,6 @@ municipal_plot <- function(Brazil_cases_areas, plot_date) {
   g1
 }
 
-areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
-
-data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
-
 thematic::thematic_shiny()
 
 ui <- navbarPage(
