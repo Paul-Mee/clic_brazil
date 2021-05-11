@@ -898,7 +898,7 @@ server <- function(input, output, session) {
                                           (all_plot_data$Date>=format(as.Date(cut_off_date), 
                                                                       "%Y-%m-%d"))) ,]
       plot_title     <-  "Estimated Rt with 95%CI"
-      plot_sub_title <- "Mean Serial Interval = 2.9 days - Truncation = 4 days - Mean delay = 7 days "
+      plot_sub_title <- "Mean Serial Interval = 6.5 days - Truncation = 4 days - Mean delay = 10 days "
       
       ## Add ranges to data
       ## Set plot ranges
