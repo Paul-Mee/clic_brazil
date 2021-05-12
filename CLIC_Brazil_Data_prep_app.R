@@ -1,0 +1,228 @@
+### 
+## This code carries out data pre-processing steps needed for the app in order to speed up the load time
+###
+## Paul Mee 11-May-2021
+###
+
+rm(list=ls())
+
+
+#  Set home directory  
+if(Sys.info()[['user']]=="eidenale"){
+  # Neal
+  setwd("C:\\Users\\eidenale\\Dropbox\\COVID_cities\\")
+  
+}
+if(Sys.info()[['user']]=="phpupmee"){
+  # Paul
+  setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/")
+  
+}
+if(Sys.info()[['user']]=="eideobra"){
+  # Oli
+  setwd("/Users/eideobra/Dropbox/10_Collab/CADDE/COVID_cities/")
+}
+
+# Required packages
+if(!require(magrittr)) install.packages("magrittr", repos = "http://cran.us.r-project.org")
+if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
+if(!require(ggplot2)) install.packages("ggplot2", repos = "http://cran.us.r-project.org")
+if(!require(ggthemes)) install.packages("ggthemes", repos = "http://cran.us.r-project.org")
+if(!require(ggrepel)) install.packages("ggrepel", repos = "http://cran.us.r-project.org")
+if(!require(gghighlight)) install.packages("gghighlight", repos = "http://cran.us.r-project.org")
+if(!require(leaflet)) install.packages("leaflet", repos = "http://cran.us.r-project.org")
+if(!require(shiny)) install.packages("shiny", repos = "http://cran.us.r-project.org")
+if(!require(shinyWidgets)) install.packages("shinyWidgets", repos = "http://cran.us.r-project.org")
+if(!require(shinydashboard)) install.packages("shinydashboard", repos = "http://cran.us.r-project.org")
+if(!require(shinythemes)) install.packages("shinythemes", repos = "http://cran.us.r-project.org")
+if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
+if(!require(mapview)) install.packages("mapview", repos = "http://cran.us.r-project.org")
+if(!require(shiny.i18n)) install.packages("shiny.i18n", repos = "http://cran.us.r-project.org")
+if(!require(markdown)) install.packages("markdown", repos = "http://cran.us.r-project.org")
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+if(!require(ggpubr)) install.packages("ggpubr", repos = "http://cran.us.r-project.org")
+if(!require(stringr)) install.packages("stringr", repos = "http://cran.us.r-project.org")
+if(!require(gsubfn)) install.packages("gsubfn", repos = "http://cran.us.r-project.org")
+if(!require(rgdal)) install.packages("rgdal", repos = "http://cran.us.r-project.org")
+if(!require(sf)) install.packages("sf", repos = "http://cran.us.r-project.org")
+if(!require(rdrop2)) install.packages("rdrop2", repos = "http://cran.us.r-project.org")
+if(!require(plotROC)) install.packages("plotROC", repos = "http://cran.us.r-project.org")
+if(!require(EpiEstim)) install.packages("EpiEstim", repos = "http://cran.us.r-project.org")
+if(!require(caTools)) install.packages("caTools", repos = "http://cran.us.r-project.org")
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(zoo)) install.packages("zoo", repos = "http://cran.us.r-project.org")
+if(!require(openxlsx)) install.packages("openxlsx", repos = "http://cran.us.r-project.org")
+if(!require(shinyBS)) install.packages("shinyBS", repos = "http://cran.us.r-project.org")
+if(!require(thematic)) install.packages("thematic", repos = "http://cran.us.r-project.org")
+if(!require(bslib)) install.packages("bslib", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+
+rm(list=ls())
+
+
+### Source OB functions 
+
+source("CC_scripts/OB_standardisation_functions.R")
+
+DateUntil <- Sys.Date()
+
+cut_off_date = "2020-04-01"
+
+# Read data
+load(fetch_latest(fileDir = "input_data/",
+                  type = "BigStandard"))
+peakDF        <- readRDS("input_data/Peak.rds")
+all_plot_data <- readRDS("input_data/Brazil_rt_prediction-current.RDS")
+total         <- readRDS("input_data/current_total_cases.RDS")
+
+load("input_data/AUCplot.rdata")
+load("input_data/AUCDF.rdata")
+
+# Look at max Rt value by group
+max_Rt_vals <- all_plot_data %>% group_by(city_state) %>% top_n(1,Rt_Smooth)
+
+# city/state combinations
+city_states <- sort(unique(as.character(all_plot_data$city_state)))
+
+# date  omit NAs
+peakDF <- peakDF[!is.na(peakDF$X), ]
+peakDF <- peakDF[!is.na(peakDF$PredictProb), ]
+
+# make sf object
+peakSF <- st_as_sf(peakDF, coords = c("X", "Y"))
+
+# Load in pre-computed BigWrap dataset
+load(file.path("input_data/Trends_plots_test2021_04_27.RData"))
+
+# Load State names and abbreviations
+states <- readRDS(file.path("input_data", "statesBR.RDS")) %>%
+  rename(Region="UF")
+
+Brazil_cases  <- BigStandard$standardised_incidence
+
+Brazil_cases_sp <- Brazil_cases
+rm(Brazil_cases)
+
+# Add full State names
+Brazil_cases_sp %<>% inner_join(states)
+
+# date trim
+Brazil_cases_sp <- Brazil_cases_sp[Brazil_cases_sp$date_end <= DateUntil, ]
+Brazil_cases_sp <- Brazil_cases_sp[!is.na(Brazil_cases_sp$X), ]
+
+# trim to just latest number of cumulative cases / incidence
+Brazil_cases_cum_cases <- data.table(aggregate(cum_cases ~ Area + X + Y,
+                                               data = Brazil_cases_sp, FUN = max))
+
+# extract dates from cv data
+min_date <- as.Date(min(Brazil_cases_sp$date_end),"%Y-%m-%d")
+max_date <- as.Date(max(Brazil_cases_sp$date_end),"%Y-%m-%d")
+
+Brazil_cases_time <- aggregate(cum_cases ~ date_end,
+                               data = Brazil_cases_sp, FUN = sum)
+
+Brazil_cases_sp2   <- Brazil_cases_sp[Brazil_cases_sp$cum_cases > 50, ]
+Brazil_cases_areas <- aggregate(Area ~ date_end, data = Brazil_cases_sp2,
+                                FUN = length)
+rm(Brazil_cases_sp2)
+
+x_dat <- re.route.origin(BigStandard$standardised_incidence)
+
+# and add intervention timing data
+x_dat <- district.start.date.find(x_dat, BigStandard$Intervention)
+
+
+
+# Filter to only those areas with >50 cum_cases
+# x_dat %<>% dplyr::filter(cum_cases > 400)
+
+x_dat$Area   <- as.character(x_dat$Area)
+# x_dat$Region <- str_sub(x_dat$Area, start= -2)
+x_dat %<>% inner_join(states) %>%
+  data.table()
+
+
+
+
+timeSUM <- cbind(aggregate(standardised_cases ~ Days_since_start,
+                           data=x_dat, FUN=quantile, probs = 0.33)[, 2],
+                 aggregate(standardised_cases ~ Days_since_start,
+                           data=x_dat, FUN=quantile, probs = 0.5)[, 2],
+                 aggregate(standardised_cases ~ Days_since_start,
+                           data=x_dat, FUN=quantile, probs = 0.66)[, 2])
+
+z_dat <- re.route.origin(BigStandard$standardised_incidence,
+                         Zerotrim = FALSE)
+
+# and add intervention timing data
+z_dat <- district.start.date.find(z_dat, BigStandard$Intervention)
+
+
+
+# all interventions
+int_opts <- colnames(z_dat)[grepl("start", colnames(z_dat))]
+int_opts <- int_opts[!int_opts == "Days_since_start"]
+
+
+# loop through interventions aggregating at the area level
+int_first <- matrix(NA, nrow = length(unique(z_dat$Area)),
+                    ncol = length(int_opts))
+for(i in 1:length(int_opts)){
+  int_first[, i] = aggregate(as.formula(paste0(int_opts[i],
+                                               " ~ Area")),
+                             data = z_dat, FUN = min)[, 2]
+}
+colnames(int_first)= gsub("_start", "", int_opts)
+
+
+# reformat into a data frame
+int_first <- data.frame(Area = sort(unique(z_dat$Area)),
+                        int_first)
+
+# now reshape into long format
+Int_long <- reshape(int_first,
+                    times = colnames(int_first)[-1],
+                    varying = list(2:ncol(int_first)),
+                    direction = "long")
+
+# formatting
+Int_long$time <- as.character(Int_long$time)
+Int_long$time <- gsub("_", " ", Int_long$time)
+
+# reordering to maintain alphabetical order
+Int_long$time <- factor(Int_long$time,
+                        levels  = sort(unique(Int_long$time)),
+                        ordered = TRUE)
+
+# standardise intervention column name
+colnames(Int_long)[3] <- "Intervention_type"
+
+
+
+# trim to just latest number of cumulative cases / incidence
+popup <- Brazil_cases_cum_cases$cum_cases
+
+my_bks <- c(0, round(exp(seq(log1p(0),
+                             log1p(max(Brazil_cases_cum_cases$cum_cases)),
+                             length = 5))))
+
+pal <- colorNumeric("YlOrBr", NULL)
+
+# Create size for circle markers
+Brazil_cases_cum_cases$size <- log1p(Brazil_cases_cum_cases$cum_cases*3)
+
+# make sf object
+db <- st_as_sf(Brazil_cases_cum_cases, coords = c("X", "Y"))
+
+# set crs
+st_crs(db)   <- 4326
+
+# Convert to spatial points data frame
+spatial      <- as(db, "Spatial")
+
+areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
+
+data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
+
+
+save.image( file = "./input_data/app_files.RDS")
