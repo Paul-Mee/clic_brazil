@@ -104,26 +104,32 @@ date.max <- max(brazil_cases_dat$date)
 all.dates <- seq(date.min, date.max, by="day")
 
 # Convert all dates to a data table 
-all.dates <- data.frame(list(date=all.dates))
+all.dates.frame <- data.frame(list(date=all.dates))
+all.dates <- copy(as.data.table(all.dates))
 all.dates$merge_col <- "A"
 
 # Merge all cities and dates 
-all_cities <- unique(brazil_cases_dat[c("city", "state", "city_ibge_code")])
+all_cities <- brazil_cases_dat[, .(city, state, city_ibge_code)]
+all_cities <- unique(all_cities, by =c("city", "state", "city_ibge_code"))
 all_cities$merge_col <- "A"
 
-all_dates_cities <- merge(all.dates,all_cities,by="merge_col")
-all_dates_cities <- data.table(all_dates_cities[c(2,3,4,5)])
-
+all_dates_cities <- merge(all.dates,all_cities,by="merge_col",allow.cartesian=TRUE)
+all_dates_cities <- all_dates_cities[, .(all.dates,city, state, city_ibge_code)]
+names(all_dates_cities)[1] <- "date"
 
 ### Merge Municipality data to dates - missing days should be NULL
-brazil_cases_dat_fill <- as.data.frame(merge(all_dates_cities,brazil_cases_dat,by=c("date","city_ibge_code"),all.x=TRUE))
+brazil_cases_dat_fill <- merge(all_dates_cities,brazil_cases_dat,by=c("date","city_ibge_code"),all.x=TRUE)
 ### Keep only required data 
-brazil_cases_dat_fill <- brazil_cases_dat_fill[(c(1,2,3,4,16,17))]
-
 names(brazil_cases_dat_fill)[1] <- "date"
 names(brazil_cases_dat_fill)[2] <- "city_ibge_code"
 names(brazil_cases_dat_fill)[3] <- "city"
 names(brazil_cases_dat_fill)[4] <- "state"
+
+brazil_cases_dat_fill <- brazil_cases_dat_fill[, .(date, city_ibge_code, city, state, case_inc, death_inc)]
+
+
+
+
 
 
 ### Replace NA with 0 in case increment and death increment - where no increrements were reported on a particular day 
