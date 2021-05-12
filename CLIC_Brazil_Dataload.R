@@ -245,7 +245,7 @@ names(brazil_cases_dat_output)[ncol(brazil_cases_dat_output)] <- "City_ibge_code
 brazil_cases_dat_output$City_ibge_code <- as.numeric(as.character(brazil_cases_dat_output$City_ibge_code))
 
 #fname <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api_", today,".csv")
-fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api_", today,".RDS")
+fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api.RDS")
 
 #write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
@@ -270,7 +270,7 @@ names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)] <- paste("X",s
                                                            substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],6,7),"_",
                                                            substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],1,4),sep="")
 ## Replace NA with 0
-brazil_deaths_dat[is.na(brazil_deaths_dat_output)] <- 0
+brazil_deaths_dat_ouput[is.na(brazil_deaths_dat_output)] <- 0
 
 
 ## Subset for output
