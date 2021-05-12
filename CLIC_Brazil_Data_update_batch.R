@@ -36,10 +36,12 @@ print("Step 1 - Case data download -  current time")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
-#sink()
-## clear memory 
-#gc()
-# 
+
+## Housekeeping clear objects and  memory 
+rm(list=ls())
+gc()
+sink()
+
 
 ### Step 2 Initial data cleaning  
 
@@ -53,12 +55,15 @@ print("Step 2 - Data cleaning -  current time")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
-#sink()
-#  
-## clear memory 
-#gc()
 
-### Step 3 Data Standardisation 
+## Housekeeping clear objects and  memory 
+rm(list=ls())
+gc()
+sink()
+
+
+
+### Step 3 Data Standardisation (needs updating for red-size file) 
 
 source (paste0(dir_scripts,"CLIC_Brazil_standardisation_implementation.R"),echo=TRUE)
 
@@ -70,8 +75,11 @@ print("Step 3 - Data Standardisation -  current time")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
-#sink()
 
+## Housekeeping clear objects and  memory 
+rm(list=ls())
+gc()
+sink()
 
 ### Step 4 Rt Estimation  
 
@@ -85,10 +93,11 @@ print("Step 4 - Rt Estimation -  current time")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
-#sink()
-## clear memory 
-#gc()
 
+## Housekeeping clear objects and  memory 
+rm(list=ls())
+gc()
+sink()
 
 ### Step 5 Peak prediction forecasting 
 
@@ -102,8 +111,46 @@ print("Step 5 - Forecasting -  current time")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
-#sink()
 
-
-
+## Housekeeping clear objects and  memory 
 rm(list=ls())
+gc()
+sink()
+
+
+
+setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/")
+source("PM_Data_prep_app.R",echo=TRUE)
+setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/") 
+today <- Sys.Date()
+today <- format(today, format="%d-%B-%Y")
+log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
+sink(file=log_file,append=TRUE)
+print("Step 6 Data Preparation for the app")
+now_time <- Sys.time() 
+print(now_time)
+closeAllConnections()
+
+## Housekeeping clear objects and  memory 
+rm(list=ls())
+gc()
+sink()
+
+
+setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/")
+source("PM_Brazil_Trends_visualisations.R",echo=TRUE)
+setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/") 
+today <- Sys.Date()
+today <- format(today, format="%d-%B-%Y")
+log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
+sink(file=log_file,append=TRUE)
+print("Step 7 - Trends visualisation for the app")
+now_time <- Sys.time() 
+print(now_time)
+closeAllConnections()
+
+
+## Housekeeping clear objects and  memory 
+rm(list=ls())
+gc()
+sink()
