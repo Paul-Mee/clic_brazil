@@ -166,7 +166,7 @@ repeat{
   }
 } 
 
-print(paste( "The total number of cases after correction = " , as.character(sum(brazil_cases_dat$case_inc)) ,sep="")) 
+print(paste( "The total number of cases after correction = " , as.character(sum(brazil_cases_dat_fill$case_inc)) ,sep="")) 
 
 ### For negative values of deaths  substract from next days value - repeat until all increments >= 0 
 i_count =  0 
@@ -194,7 +194,7 @@ repeat{
   }
 } 
 
-print(paste( "The total number of deaths after correction = " , as.character(sum(brazil_cases_dat$death_inc)) ,sep="")) 
+print(paste( "The total number of deaths after correction = " , as.character(sum(brazil_cases_dat_fill$death_inc)) ,sep="")) 
 
 ### Recalculate cumulative totals
 brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), case_cum=cumsum(case_inc))
@@ -207,15 +207,21 @@ Encoding(brazil_cases_dat_fill$city) <- "UTF-8"
 ### Keep only cumulative totals
 brazil_cases_dat_fill <- brazil_cases_dat_fill[c(1,2,3,4,7,8)]
 
+
+
 ### get data in the format date(yyyy-mm-dd),Area_Name,State,confirmed,city_ibge_code for cases data.table
 ### get data in the format date(yyyy-mm-dd),Area_Name,State,deaths,city_ibge_code for deaths data.table
 
 names(brazil_cases_dat_fill)[1] <- "date"
-names(brazil_cases_dat_fill)[2] <- "Area_Name"
-names(brazil_cases_dat_fill)[3] <- "State"
-names(brazil_cases_dat_fill)[4] <- "City_ibge_code"
+names(brazil_cases_dat_fill)[3] <- "Area_Name"
+names(brazil_cases_dat_fill)[4] <- "State"
+names(brazil_cases_dat_fill)[2] <- "City_ibge_code"
 names(brazil_cases_dat_fill)[5] <- "cases"
 names(brazil_cases_dat_fill)[6] <- "deaths"
+
+
+# order columns
+brazil_cases_dat_fill <- brazil_cases_dat_fill[with(brazil_cases_dat_fill, order(date, Area_Name, State,City_ibge_code,cases,deaths )), ]
 
 ## Getting case data in right format
 
@@ -223,7 +229,7 @@ brazil_cases_dat_output <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$St
                             brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "cases")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
-names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)] <- paste("X",substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat)],9,10),"_",
+names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)] <- paste("X",substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],9,10),"_",
                                                            substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],6,7),"_",
                                                            substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],1,4),sep="")
 ## Replace NA with 0
@@ -231,7 +237,7 @@ brazil_cases_dat_output[is.na(brazil_cases_dat_output)] <- 0
 
 
 ## Subset for output
-brazil_cases_dat_output <- brazil_cases_dat_output[c(2,1,4:ncol(brazil_cases_dat),3)]
+brazil_cases_dat_output <- brazil_cases_dat_output[c(2,1,4:ncol(brazil_cases_dat_output),3)]
 names(brazil_cases_dat_output)[1] <- "Area_Name"
 names(brazil_cases_dat_output)[2] <- "State"
 names(brazil_cases_dat_output)[ncol(brazil_cases_dat_output)] <- "City_ibge_code"
@@ -256,19 +262,19 @@ saveRDS(brazil_cases_dat_output, file = fname_RDS)
 # ################
 ## Getting death data in right format
 
-brazil_deaths_dat <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
+brazil_deaths_dat_output <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
                             brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "deaths")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
-names(brazil_deaths_dat)[4:ncol(brazil_deaths_dat)] <- paste("X",substring(names(brazil_deaths_dat)[4:ncol(brazil_deaths_dat)],9,10),"_",
-                                                           substring(names(brazil_deaths_dat)[4:ncol(brazil_deaths_dat)],6,7),"_",
-                                                           substring(names(brazil_deaths_dat)[4:ncol(brazil_deaths_dat)],1,4),sep="")
+names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)] <- paste("X",substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],9,10),"_",
+                                                           substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],6,7),"_",
+                                                           substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],1,4),sep="")
 ## Replace NA with 0
-brazil_deaths_dat[is.na(brazil_deaths_dat)] <- 0
+brazil_deaths_dat[is.na(brazil_deaths_dat_output)] <- 0
 
 
 ## Subset for output
-brazil_deaths_dat_output <- brazil_deaths_dat[c(2,1,4:ncol(brazil_cases_dat),3)]
+brazil_deaths_dat_output <- brazil_deaths_dat_output[c(2,1,4:ncol(brazil_deaths_dat_output),3)]
 names(brazil_deaths_dat_output)[1] <- "Area_Name"
 names(brazil_deaths_dat_output)[2] <- "State"
 names(brazil_deaths_dat_output)[ncol(brazil_deaths_dat_output)] <- "City_ibge_code"
