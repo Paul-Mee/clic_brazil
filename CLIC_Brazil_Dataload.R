@@ -95,6 +95,8 @@ brazil_cases_dat$death_inc <- ifelse(is.na(brazil_cases_dat$death_inc), brazil_c
 print(paste( "The total number of cases before correction = " , as.character(sum(brazil_cases_dat$case_inc)) ,sep="")) 
 print(paste( "The total number of deaths before correction = " , as.character(sum(brazil_cases_dat$death_inc)) ,sep="")) 
 
+brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
+
 ### Generate a data table with all dates between the start of data collection and today
 
 date.min <- min(brazil_cases_dat$date)
@@ -102,7 +104,7 @@ date.max <- max(brazil_cases_dat$date)
 all.dates <- seq(date.min, date.max, by="day")
 
 # Convert all dates to a data table 
-all.dates <- data.table::data.table(list(date=all.dates))
+all.dates <- data.frame(list(date=all.dates))
 all.dates$merge_col <- "A"
 
 # Merge all cities and dates 
@@ -110,12 +112,19 @@ all_cities <- unique(brazil_cases_dat[c("city", "state", "city_ibge_code")])
 all_cities$merge_col <- "A"
 
 all_dates_cities <- merge(all.dates,all_cities,by="merge_col")
-all_dates_cities <- all_dates_cities[c(2,3,4,5)]
+all_dates_cities <- data.table(all_dates_cities[c(2,3,4,5)])
+
 
 ### Merge Municipality data to dates - missing days should be NULL
-brazil_cases_dat_fill <- merge(all_dates_cities,brazil_cases_dat,by=c("date","city","state","city_ibge_code"),all.x=TRUE)
+brazil_cases_dat_fill <- as.data.frame(merge(all_dates_cities,brazil_cases_dat,by=c("date","city_ibge_code"),all.x=TRUE))
 ### Keep only required data 
-brazil_cases_dat_fill <- brazil_cases_dat_fill[(c(1,2,3,4,14,15))]
+brazil_cases_dat_fill <- brazil_cases_dat_fill[(c(1,2,3,4,16,17))]
+
+names(brazil_cases_dat_fill)[1] <- "date"
+names(brazil_cases_dat_fill)[2] <- "city_ibge_code"
+names(brazil_cases_dat_fill)[3] <- "city"
+names(brazil_cases_dat_fill)[4] <- "state"
+
 
 ### Replace NA with 0 in case increment and death increment - where no increrements were reported on a particular day 
 brazil_cases_dat_fill$case_inc <- ifelse(is.na(brazil_cases_dat_fill$case_inc), 0, brazil_cases_dat_fill$case_inc)
@@ -185,7 +194,7 @@ print(paste( "The total number of deaths after correction = " , as.character(sum
 brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), case_cum=cumsum(case_inc))
 brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), death_cum=cumsum(death_inc))
 
-## Encoding cityt names
+## Encoding city names
 brazil_cases_dat_fill$city <- as.character(brazil_cases_dat_fill$city)
 Encoding(brazil_cases_dat_fill$city) <- "UTF-8"
 
@@ -204,19 +213,19 @@ names(brazil_cases_dat_fill)[6] <- "deaths"
 
 ## Getting case data in right format
 
-brazil_cases_dat <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
+brazil_cases_dat_output <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
                             brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "cases")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
-names(brazil_cases_dat)[4:ncol(brazil_cases_dat)] <- paste("X",substring(names(brazil_cases_dat)[4:ncol(brazil_cases_dat)],9,10),"_",
-                                                           substring(names(brazil_cases_dat)[4:ncol(brazil_cases_dat)],6,7),"_",
-                                                           substring(names(brazil_cases_dat)[4:ncol(brazil_cases_dat)],1,4),sep="")
+names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)] <- paste("X",substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat)],9,10),"_",
+                                                           substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],6,7),"_",
+                                                           substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],1,4),sep="")
 ## Replace NA with 0
-brazil_cases_dat[is.na(brazil_cases_dat)] <- 0
+brazil_cases_dat_output[is.na(brazil_cases_dat_output)] <- 0
 
 
 ## Subset for output
-brazil_cases_dat_output <- brazil_cases_dat[c(2,1,4:ncol(brazil_cases_dat),3)]
+brazil_cases_dat_output <- brazil_cases_dat_output[c(2,1,4:ncol(brazil_cases_dat),3)]
 names(brazil_cases_dat_output)[1] <- "Area_Name"
 names(brazil_cases_dat_output)[2] <- "State"
 names(brazil_cases_dat_output)[ncol(brazil_cases_dat_output)] <- "City_ibge_code"
