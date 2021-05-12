@@ -118,10 +118,11 @@ gc()
 sink()
 
 
+### Step 6  Data prep for the app
 
-setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/")
-source("PM_Data_prep_app.R",echo=TRUE)
-setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/") 
+
+source (paste0(dir_scripts,"CLIC_Brazil_Data_prep_app.R"),echo=TRUE)
+
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
@@ -137,14 +138,15 @@ gc()
 sink()
 
 
-setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/")
-source("PM_Brazil_Trends_visualisations.R",echo=TRUE)
-setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Scripts/") 
+### Step 6  Update trends visualisation 
+
+source (paste0(dir_scripts,"CLIC_Brazil_Trends_visualisations.R"),echo=TRUE)
+
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
 sink(file=log_file,append=TRUE)
-print("Step 7 - Trends visualisation for the app")
+print("Step 7 - Trends visualisations for the app")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
