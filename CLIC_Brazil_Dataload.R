@@ -282,7 +282,8 @@ names(brazil_deaths_dat_output)[ncol(brazil_deaths_dat_output)] <- "City_ibge_co
 brazil_deaths_dat_output$City_ibge_code <- as.numeric(as.character(brazil_deaths_dat_output$City_ibge_code))
 
 #fname <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api_", today,".csv")
-fname_RDS <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api_", today,".RDS")
+# Now overwritng previous daily file
+fname_RDS <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api.RDS")
 #write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_deaths_dat_output, file = fname_RDS) 
