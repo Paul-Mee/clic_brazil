@@ -31,17 +31,17 @@ today <- format(today, format="%d-%B-%Y")
 
 ## Get all data in csv format 
 brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
-brazil_cases_dat <- data.frame(strsplit(brazil_io_csv, ",")) 
+brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
 
 ## to test limiting to data until end of March 2020
 
-row.names(brazil_cases_dat) <- brazil_cases_dat[,1]
+row.names(brazil_cases) <- brazil_cases[,1]
 # transpose data 
-brazil_cases_dat <- t(brazil_cases_dat[,-1])
+brazil_cases <- t(brazil_cases[,-1])
 # delete row names
-row.names(brazil_cases_dat) <- c()
+row.names(brazil_cases) <- c()
 
-brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
+brazil_cases <- data.table::data.table(brazil_cases)
 
 
 
@@ -55,10 +55,10 @@ brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
 # ### Cases data 
 # # Code to read in  Brazil.io data and reformat in correct format
 #brazil_cases_dat <- data.frame(brazil_io_full)
-brazil_cases_dat$date <- as.Date(brazil_cases_dat$date, format = "%Y-%m-%d")
+brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
 
 ## to test limiting to data until end of Aptil 2020
-brazil_cases_dat <- brazil_cases_dat %>% filter(date < as.Date("30-04-2020","%d-%m-%Y"))
+brazil_cases_dat <- brazil_cases %>% filter(date < as.Date("30-04-2020","%d-%m-%Y"))
 
 ## Keep city level data 
 brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
