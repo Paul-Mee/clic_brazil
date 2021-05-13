@@ -72,9 +72,7 @@ BigStandard <- Big.standardise(c_dat = Brazil_cases,
                                prop_hosp = prop_hosp,
                                prop_ITU = prop_ITU)
 
-save(BigStandard, file = paste0(dir_data_objects,"Brazil_BigStandard_results_",
-                                gsub("-", "_", Sys.Date()),
-                                ".RData"))
+save(BigStandard, file = paste0(dir_data_objects,"Brazil_BigStandard_results.RData"))
 
 
 

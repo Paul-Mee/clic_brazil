@@ -42,8 +42,8 @@ if (sys.nframe() == 0L) {
 
 source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
 
-   load(fetch_latest(fileDir = dir_data_objects,
-                     type = "BigStandard"))
+load(paste0(dir_data_objects,"Brazil_BigStandard_results.RData"))
+
 
 # preprocessing to re-route beginign of the epidemic depending on chosen area
 c_dat = re.route.origin(BigStandard$standardised_incidence)

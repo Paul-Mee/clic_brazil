@@ -81,8 +81,10 @@ sample_n_groups = function(grouped_df, size, replace = FALSE, weight=NULL) {
 
 
 ### Fetch latest data set 
-load(fetch_latest(fileDir = dir_data_objects,
-                  type = "BigStandard"))
+# load(fetch_latest(fileDir = dir_data_objects,
+#                   type = "BigStandard"))
+
+load(paste0(dir_data_objects,"Brazil_BigStandard_results.RData"))
 
 
 ### Selecting data  ranges for analysis 

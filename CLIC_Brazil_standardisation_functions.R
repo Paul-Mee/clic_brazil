@@ -427,8 +427,8 @@ Big.standardise <- function(c_dat,
   # case_age_dist = Brazil_case_age_dist
   # Intervention = Intervention
   # covariates = SDI
-  # prop_hosp = 1
-  # prop_ITU = 1
+  # prop_hosp <- 0.920202
+  # prop_ITU <- 0.3807172
   
   ################
   # part 1: building focus district relevant parameters:
