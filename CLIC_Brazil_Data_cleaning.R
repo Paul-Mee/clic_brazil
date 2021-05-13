@@ -319,56 +319,56 @@ save(SDI, file = paste0(dir_covariates,"Brazil_mun_covs.RData"))
 
 
 # 1F updated hospital length of stay calculations for Brazil
-load(paste0(dir_data_objects,"CVE_Date_delays.RData"))
-
-# date formatting
-brazil_cve_dates$dt_hospitalization = as.Date(brazil_cve_dates$dt_hospitalization, format= "%m/%d/%y")
-brazil_cve_dates$dt_itu_admission = as.Date(brazil_cve_dates$dt_itu_admission, format= "%m/%d/%y")
-brazil_cve_dates$dt_itu_discharge = as.Date(brazil_cve_dates$dt_itu_discharge, format= "%m/%d/%y")
-brazil_cve_dates$dt_death_or_discharge = as.Date(brazil_cve_dates$dt_death_or_discharge, format= "%m/%d/%y")
-brazil_cve_dates$dt_symptom_onset = as.Date(brazil_cve_dates$dt_symptom_onset, format= "%m/%d/%y")
-
-
-# a few data entry errors
-brazil_cve_dates$dt_hospitalization[brazil_cve_dates$dt_hospitalization > as.Date("2020-05-04")] = NA
-brazil_cve_dates$dt_itu_admission[brazil_cve_dates$dt_itu_admission > as.Date("2020-05-04")] = NA
-brazil_cve_dates$dt_itu_discharge[brazil_cve_dates$dt_itu_discharge > as.Date("2020-05-04")] = NA
-brazil_cve_dates$dt_death_or_discharge[brazil_cve_dates$dt_death_or_discharge > as.Date("2020-05-04")] = NA
-
-# Length of hosptial stay distribution
-LOS_absolute <- as.numeric(brazil_cve_dates$dt_death_or_discharge - brazil_cve_dates$dt_hospitalization)
-LOS_ITU_absolute <- as.numeric(brazil_cve_dates$dt_itu_discharge - brazil_cve_dates$dt_itu_admission)
-hist(LOS_absolute)
-hist(LOS_ITU_absolute)
-
-# trim cases from the past month to avoid overepresenting short hospital stays
-LOS_absolute <- LOS_absolute[brazil_cve_dates$dt_hospitalization <= "2020-04-04"]
-LOS_ITU_absolute <- LOS_ITU_absolute[brazil_cve_dates$dt_itu_admission <= "2020-04-04"]
-#hist(LOS_absolute)
-#hist(LOS_ITU_absolute)
-
-# remove NAs
-LOS_absolute = LOS_absolute[!is.na(LOS_absolute)]
-LOS_ITU_absolute = LOS_ITU_absolute[!is.na(LOS_ITU_absolute)]
-
-# define funcitons and save
-LOS <- function(times) sample(LOS_absolute, times, replace = T)
-LOS_ITU <- function(times) sample(LOS_ITU_absolute, times, replace = T)
-
-#save(LOS, file = "CC_Intermediate_data_obj/LOS_Brazil_function.RData")
-save(LOS_absolute, file = paste0(dir_data_objects,"LOS_Brazil_data.RData"))
-#save(LOS_ITU, file = "CC_Intermediate_data_obj/LOS_ITU_Brazil_function.RData")
-save(LOS_ITU_absolute, file = paste0(dir_data_objects,"LOS_ITU_Brazil_data.RData"))
-
-# proportion of cases hospitalised
-brazil_cve_dates_final = brazil_cve_dates[brazil_cve_dates$dt_symptom_onset <= "2020-04-04", ]
-#sum(brazil_cve_dates_final$hospitalised) / nrow(brazil_cve_dates_final) # 0.920202
-
-# proportion of hospitalised cases that require ITU at some point during their stay
-#sum(brazil_cve_dates_final$icu) / sum(brazil_cve_dates_final$hospitalised) # 0.3807172
-
-# CFR among cases > 1 month old (resolved cases)
-#table(brazil_cve_dates_final$outcome)[1] / sum(table(brazil_cve_dates_final$outcome)[1:2]) # 0.3417722 
+# load(paste0(dir_data_objects,"CVE_Date_delays.RData"))
+# 
+# # date formatting
+# brazil_cve_dates$dt_hospitalization = as.Date(brazil_cve_dates$dt_hospitalization, format= "%m/%d/%y")
+# brazil_cve_dates$dt_itu_admission = as.Date(brazil_cve_dates$dt_itu_admission, format= "%m/%d/%y")
+# brazil_cve_dates$dt_itu_discharge = as.Date(brazil_cve_dates$dt_itu_discharge, format= "%m/%d/%y")
+# brazil_cve_dates$dt_death_or_discharge = as.Date(brazil_cve_dates$dt_death_or_discharge, format= "%m/%d/%y")
+# brazil_cve_dates$dt_symptom_onset = as.Date(brazil_cve_dates$dt_symptom_onset, format= "%m/%d/%y")
+# 
+# 
+# # a few data entry errors
+# brazil_cve_dates$dt_hospitalization[brazil_cve_dates$dt_hospitalization > as.Date("2020-05-04")] = NA
+# brazil_cve_dates$dt_itu_admission[brazil_cve_dates$dt_itu_admission > as.Date("2020-05-04")] = NA
+# brazil_cve_dates$dt_itu_discharge[brazil_cve_dates$dt_itu_discharge > as.Date("2020-05-04")] = NA
+# brazil_cve_dates$dt_death_or_discharge[brazil_cve_dates$dt_death_or_discharge > as.Date("2020-05-04")] = NA
+# 
+# # Length of hosptial stay distribution
+# LOS_absolute <- as.numeric(brazil_cve_dates$dt_death_or_discharge - brazil_cve_dates$dt_hospitalization)
+# LOS_ITU_absolute <- as.numeric(brazil_cve_dates$dt_itu_discharge - brazil_cve_dates$dt_itu_admission)
+# hist(LOS_absolute)
+# hist(LOS_ITU_absolute)
+# 
+# # trim cases from the past month to avoid overepresenting short hospital stays
+# LOS_absolute <- LOS_absolute[brazil_cve_dates$dt_hospitalization <= "2020-04-04"]
+# LOS_ITU_absolute <- LOS_ITU_absolute[brazil_cve_dates$dt_itu_admission <= "2020-04-04"]
+# #hist(LOS_absolute)
+# #hist(LOS_ITU_absolute)
+# 
+# # remove NAs
+# LOS_absolute = LOS_absolute[!is.na(LOS_absolute)]
+# LOS_ITU_absolute = LOS_ITU_absolute[!is.na(LOS_ITU_absolute)]
+# 
+# # define funcitons and save
+# LOS <- function(times) sample(LOS_absolute, times, replace = T)
+# LOS_ITU <- function(times) sample(LOS_ITU_absolute, times, replace = T)
+# 
+# #save(LOS, file = "CC_Intermediate_data_obj/LOS_Brazil_function.RData")
+# save(LOS_absolute, file = paste0(dir_data_objects,"LOS_Brazil_data.RData"))
+# #save(LOS_ITU, file = "CC_Intermediate_data_obj/LOS_ITU_Brazil_function.RData")
+# save(LOS_ITU_absolute, file = paste0(dir_data_objects,"LOS_ITU_Brazil_data.RData"))
+# 
+# # proportion of cases hospitalised
+# brazil_cve_dates_final = brazil_cve_dates[brazil_cve_dates$dt_symptom_onset <= "2020-04-04", ]
+# #sum(brazil_cve_dates_final$hospitalised) / nrow(brazil_cve_dates_final) # 0.920202
+# 
+# # proportion of hospitalised cases that require ITU at some point during their stay
+# #sum(brazil_cve_dates_final$icu) / sum(brazil_cve_dates_final$hospitalised) # 0.3807172
+# 
+# # CFR among cases > 1 month old (resolved cases)
+# #table(brazil_cve_dates_final$outcome)[1] / sum(table(brazil_cve_dates_final$outcome)[1:2]) # 0.3417722 
 
 
 

@@ -274,7 +274,7 @@ names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)] <- paste("X",s
                                                            substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],6,7),"_",
                                                            substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],1,4),sep="")
 ## Replace NA with 0
-brazil_deaths_dat_ouput[is.na(brazil_deaths_dat_output)] <- 0
+brazil_deaths_dat_output[is.na(brazil_deaths_dat_output)] <- 0
 
 
 ## Subset for output
