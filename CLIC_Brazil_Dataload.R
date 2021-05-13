@@ -57,8 +57,8 @@ brazil_cases <- data.table::data.table(brazil_cases)
 #brazil_cases_dat <- data.frame(brazil_io_full)
 brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
 
-## to test limiting to data until end of Aptil 2020
-brazil_cases_dat <- brazil_cases %>% filter(date < as.Date("30-04-2020","%d-%m-%Y"))
+## to test limiting to data until end of Oct 2020
+brazil_cases_dat <- brazil_cases %>% filter(date < as.Date("30-10-2020","%d-%m-%Y"))
 
 ## Keep city level data 
 brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
