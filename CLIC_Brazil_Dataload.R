@@ -33,6 +33,8 @@ today <- format(today, format="%d-%B-%Y")
 brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
 brazil_cases_dat <- data.frame(strsplit(brazil_io_csv, ",")) 
 
+## to test limiting to data until end of March 2020
+
 row.names(brazil_cases_dat) <- brazil_cases_dat[,1]
 # transpose data 
 brazil_cases_dat <- t(brazil_cases_dat[,-1])
@@ -40,6 +42,8 @@ brazil_cases_dat <- t(brazil_cases_dat[,-1])
 row.names(brazil_cases_dat) <- c()
 
 brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
+
+
 
 #fname <- paste0(dir_source_data,"brazil_raw_cases_api_", today,".csv")
 #write.csv(brazil_io_full,file = fname,row.names=FALSE)
@@ -52,6 +56,9 @@ brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
 # # Code to read in  Brazil.io data and reformat in correct format
 #brazil_cases_dat <- data.frame(brazil_io_full)
 brazil_cases_dat$date <- as.Date(brazil_cases_dat$date, format = "%Y-%m-%d")
+
+## to test limiting to data until end of Aptil 2020
+brazil_cases_dat <- brazil_cases_dat %>% filter(date < as.Date("30-04-2020","%d-%m-%Y"))
 
 ## Keep city level data 
 brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
@@ -244,18 +251,15 @@ names(brazil_cases_dat_output)[ncol(brazil_cases_dat_output)] <- "City_ibge_code
 # IBGE code as number for back compatibility
 brazil_cases_dat_output$City_ibge_code <- as.numeric(as.character(brazil_cases_dat_output$City_ibge_code))
 
-#fname <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api_", today,".csv")
-fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api_", today,".RDS")
+fname <- paste0(dir_daily_data,"brazil_daily_cases_ibge_api_", today,".csv")
+fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api.RDS")
 
-#write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
+write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_cases_dat_output, file = fname_RDS) 
 
 
-## For testing get top 50 rows 
-# brazil_cases_dat_output_head <- brazil_cases_dat_output[1:50,]
-# write.csv(brazil_cases_dat_output_head,file = fname,row.names=FALSE)
-# saveRDS(brazil_cases_dat_output_head, file = fname_RDS)
+
  
 # ################
 # ### Deaths data 
@@ -270,7 +274,7 @@ names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)] <- paste("X",s
                                                            substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],6,7),"_",
                                                            substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],1,4),sep="")
 ## Replace NA with 0
-brazil_deaths_dat[is.na(brazil_deaths_dat_output)] <- 0
+brazil_deaths_dat_ouput[is.na(brazil_deaths_dat_output)] <- 0
 
 
 ## Subset for output
@@ -281,15 +285,13 @@ names(brazil_deaths_dat_output)[ncol(brazil_deaths_dat_output)] <- "City_ibge_co
 # IBGE code as number for back compatibility
 brazil_deaths_dat_output$City_ibge_code <- as.numeric(as.character(brazil_deaths_dat_output$City_ibge_code))
 
-#fname <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api_", today,".csv")
-# Now overwritng previous daily file
+fname <- paste0(dir_daily_data,"brazil_daily_deaths_ibge_api_", today,".csv")
 fname_RDS <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api.RDS")
-#write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
+
+## Save csv file
+write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_deaths_dat_output, file = fname_RDS) 
 
-## For testing get top 50 rows 
-# brazil_deaths_dat_output_head <- brazil_deaths_dat_output[1:50,]
-# write.csv(brazil_deaths_dat_output_head,file = fname,row.names=FALSE)
-# saveRDS(brazil_deaths_dat_output_head, file = fname_RDS)
+
 

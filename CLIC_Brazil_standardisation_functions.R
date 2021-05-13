@@ -3,7 +3,8 @@
 
 # Oliver Brady
 # 30th April 2020
-
+# Edit Paul Mee 
+# 15 Apr 2021 - reduce size of output files
 
 
 # date.rehsape() function converts from wide to long format while preservign date structures
@@ -109,12 +110,13 @@ age_incid_standardise <- function(n_cases, # the number of cases to be distribut
                                   target_age_dist, # the number of people in ages 0-90 in target area
                                   COVID_age_dist = case_age_dist) # the age distribution of COVID cases
 {
-  
+  require(data.table)
   # calculate expected number of cases in each age group if everyone was exposed
   origin_age_dist = data.frame(Age = 0:90,
                                pop = origin_age_dist,
                                Exp = origin_age_dist * COVID_age_dist$risk[1:91])
   
+  origin_age_dist <- data.table::as.data.table(origin_age_dist)
   # now normalise and multiple by n cases
   origin_age_dist$Exp = 1 * origin_age_dist$Exp / sum(origin_age_dist$Exp)
   
@@ -410,14 +412,6 @@ ad2.ad1.combine <- function(Ad1Ad2_data){
 
 
 
-
-
-
-
-
-
-
-
 # wrapper function for all of the standardisation processes
 Big.standardise <- function(c_dat,
                             deaths_dat,
@@ -427,7 +421,14 @@ Big.standardise <- function(c_dat,
                             covariates = NA,
                             prop_hosp = 1,
                             prop_ITU = 1){
-  
+  # c_dat = Brazil_cases
+  # deaths_dat = Brazil_deaths
+  # age_dist = Brazil_age_dist
+  # case_age_dist = Brazil_case_age_dist
+  # Intervention = Intervention
+  # covariates = SDI
+  # prop_hosp = 1
+  # prop_ITU = 1
   
   ################
   # part 1: building focus district relevant parameters:
@@ -452,7 +453,8 @@ Big.standardise <- function(c_dat,
   
   # adding bed occupancy and death variables
   f_c_dat$cum_deaths = deaths_dat$cum_cases
-  f_c_dat = region.bed.simulator(f_c_dat)
+  # remove bed simulation part
+  #f_c_dat = region.bed.simulator(f_c_dat)
   
   ## Age-incidence standardisation
   f_c_dat <- AIS.multiregion(f_c_dat, 
@@ -473,25 +475,27 @@ Big.standardise <- function(c_dat,
                                                             nchar(x)))
   
   # add covariates if relevant
-  if(length(covariates) > 1){
-    f_c_dat$popden <- covariates$popden[match(f_c_dat$Area, covariates$Area_Name)]
-    f_c_dat$SDI <- covariates$SDI_index[match(f_c_dat$Area, covariates$Area_Name)]
-    f_c_dat$Piped_water <- covariates$Piped_water[match(f_c_dat$Area, covariates$Area_Name)]
-    f_c_dat$Sewage_or_septic <- covariates$Sewage_or_septic[match(f_c_dat$Area, covariates$Area_Name)]
-    f_c_dat$Travel_time <- covariates$Travel_time[match(f_c_dat$Area, covariates$Area_Name)]
-  }
+  # now not adding to this file
+  # if(length(covariates) > 1){
+  #   f_c_dat$popden <- covariates$popden[match(f_c_dat$Area, covariates$Area_Name)]
+  #   f_c_dat$SDI <- covariates$SDI_index[match(f_c_dat$Area, covariates$Area_Name)]
+  #   f_c_dat$Piped_water <- covariates$Piped_water[match(f_c_dat$Area, covariates$Area_Name)]
+  #   f_c_dat$Sewage_or_septic <- covariates$Sewage_or_septic[match(f_c_dat$Area, covariates$Area_Name)]
+  #   f_c_dat$Travel_time <- covariates$Travel_time[match(f_c_dat$Area, covariates$Area_Name)]
+  # }
   
   # convert standardised counts to incidence (cases per 1,000 population)
   f_c_dat$standardised_cases = 1000 * f_c_dat$standardised_cases / sum(f_pop_age)
   f_c_dat$standardised_deaths = 1000 * f_c_dat$standardised_deaths / sum(f_pop_age)
   
-  f_c_dat$Stan_Bed_occ_2_5 = 1000 * f_c_dat$Stan_Bed_occ_2_5 / sum(f_pop_age)
-  f_c_dat$Stan_Bed_occ_50 = 1000 * f_c_dat$Stan_Bed_occ_50 / sum(f_pop_age)
-  f_c_dat$Stan_Bed_occ_97_5 = 1000 * f_c_dat$Stan_Bed_occ_97_5 / sum(f_pop_age)
-  
-  f_c_dat$Stan_ITU_Bed_occ_2_5 = 1000 * f_c_dat$Stan_ITU_Bed_occ_2_5 / sum(f_pop_age)
-  f_c_dat$Stan_ITU_Bed_occ_50 = 1000 * f_c_dat$Stan_ITU_Bed_occ_50 / sum(f_pop_age)
-  f_c_dat$Stan_ITU_Bed_occ_97_5 = 1000 * f_c_dat$Stan_ITU_Bed_occ_97_5 / sum(f_pop_age)
+  # Remove bed occupancy part 
+  # f_c_dat$Stan_Bed_occ_2_5 = 1000 * f_c_dat$Stan_Bed_occ_2_5 / sum(f_pop_age)
+  # f_c_dat$Stan_Bed_occ_50 = 1000 * f_c_dat$Stan_Bed_occ_50 / sum(f_pop_age)
+  # f_c_dat$Stan_Bed_occ_97_5 = 1000 * f_c_dat$Stan_Bed_occ_97_5 / sum(f_pop_age)
+  # 
+  # f_c_dat$Stan_ITU_Bed_occ_2_5 = 1000 * f_c_dat$Stan_ITU_Bed_occ_2_5 / sum(f_pop_age)
+  # f_c_dat$Stan_ITU_Bed_occ_50 = 1000 * f_c_dat$Stan_ITU_Bed_occ_50 / sum(f_pop_age)
+  # f_c_dat$Stan_ITU_Bed_occ_97_5 = 1000 * f_c_dat$Stan_ITU_Bed_occ_97_5 / sum(f_pop_age)
   
   
   # add lat long of municiplaity centroid
@@ -633,20 +637,28 @@ data_compile <- function(fileList){
 # wrapper function for performing standardisation across multiple regions
 AIS.multiregion <- function(c_dat, target_age_dist, age_dist, case_age_dist){
   
+  # c_dat = f_c_dat
+  # target_age_dist = f_pop_age
+  # age_dist = age_dist
+  # case_age_dist = case_age_dist
+  
   # initialise vectors to be filled
   c_dat$standardised_cases = rep(NA, nrow(c_dat))
   c_dat$standardised_deaths = rep(NA, nrow(c_dat))
   
-  c_dat$Stan_Bed_occ_2_5 = rep(NA, nrow(c_dat))
-  c_dat$Stan_Bed_occ_50 = rep(NA, nrow(c_dat))
-  c_dat$Stan_Bed_occ_97_5 = rep(NA, nrow(c_dat))
+  # Remove bed occupancy data 
   
-  c_dat$Stan_ITU_Bed_occ_2_5 = rep(NA, nrow(c_dat))
-  c_dat$Stan_ITU_Bed_occ_50 = rep(NA, nrow(c_dat))
-  c_dat$Stan_ITU_Bed_occ_97_5 = rep(NA, nrow(c_dat))
+  # c_dat$Stan_Bed_occ_2_5 = rep(NA, nrow(c_dat))
+  # c_dat$Stan_Bed_occ_50 = rep(NA, nrow(c_dat))
+  # c_dat$Stan_Bed_occ_97_5 = rep(NA, nrow(c_dat))
+  # 
+  # c_dat$Stan_ITU_Bed_occ_2_5 = rep(NA, nrow(c_dat))
+  # c_dat$Stan_ITU_Bed_occ_50 = rep(NA, nrow(c_dat))
+  # c_dat$Stan_ITU_Bed_occ_97_5 = rep(NA, nrow(c_dat))
   
-  # unqiue municipalities
-  u_muns <- unique(c_dat$Area)
+  # unique municipalities
+  u_muns <- as.factor(unique(as.character(c_dat$Area)))
+  c_dat$Area <- as.factor(unique(as.character(c_dat$Area)))
   
   for(i in 1:length(u_muns)){
     # draw down new age distribution of municipality
@@ -657,8 +669,8 @@ AIS.multiregion <- function(c_dat, target_age_dist, age_dist, case_age_dist){
     }
     
     # now standardise
-    for(k in 3:10){
-      c_dat[c_dat$Area == u_muns[i], (k + 8)] = age_incid_standardise(n_cases = c_dat[c_dat$Area == u_muns[i], k],
+    for(k in 3:4){
+      c_dat[c_dat$Area == u_muns[i], (k + 2)] = age_incid_standardise(n_cases = c_dat[c_dat$Area == u_muns[i], k],
                                                                        origin_age_dist = origin_age_dist,
                                                                        target_age_dist = target_age_dist,
                                                                        COVID_age_dist = case_age_dist)

@@ -15,8 +15,8 @@ require(sf)
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 
-log_fil_dir <- "C:/github/clic_brazil_tmp/log_files/"
-dir_scripts <- "C:/github/clic_brazil_tmp/"
+log_fil_dir <- "C:/github/clic_brazil/log_files/"
+dir_scripts <- "C:/github/clic_brazil/"
 
 
 
@@ -38,9 +38,9 @@ print(now_time)
 closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()
+
 
 
 ### Step 2 Initial data cleaning  
@@ -57,9 +57,9 @@ print(now_time)
 closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()
+
 
 
 
@@ -77,9 +77,9 @@ print(now_time)
 closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()
+
 
 ### Step 4 Rt Estimation  
 
@@ -95,9 +95,8 @@ print(now_time)
 closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()
 
 ### Step 5 Peak prediction forecasting 
 
@@ -113,9 +112,9 @@ print(now_time)
 closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()
+
 
 
 ### Step 6  Data prep for the app
@@ -133,9 +132,9 @@ print(now_time)
 closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()
+
 
 
 ### Step 6  Update trends visualisation 
@@ -153,6 +152,5 @@ closeAllConnections()
 
 
 ## Housekeeping clear objects and  memory 
-rm(list=ls())
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
-sink()

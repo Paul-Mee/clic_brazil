@@ -50,8 +50,8 @@ save(Brazil_age_dist, file = paste0(dir_pop_age_dist,"Brazil_pop_age_clean.RData
 
 
 ### 1B Covid Case timeseries formatting
-c_dat <- fetch_latest(fileDir = dir_formatted_case_data, type = "cases")
-c_dat_deaths <- fetch_latest(fileDir = dir_formatted_death_data, type = "deaths")
+c_dat <- readRDS(paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api.RDS"))
+c_dat_deaths <- readRDS(paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api.RDS"))
 
 # check they are numeric (not for IBGE codes)
 #for(i in 3:ncol(c_dat)){c_dat[, i] = as.numeric(c_dat[, i])} 

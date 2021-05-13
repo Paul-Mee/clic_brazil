@@ -4,6 +4,8 @@
 ##############
 
 dir_source_data <-  "C:/github/data/brazil_io/"
+## This directory will grow in size and should be written direct to the cloud
+dir_daily_data <-  "C:/github/daily_data/"
 dir_formatted_case_data <-  "C:/github/data/cases/"
 dir_formatted_death_data <-  "C:/github/data/deaths/"
 dir_scripts <- "C:/github/clic_brazil/"
