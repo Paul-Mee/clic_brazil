@@ -33,7 +33,7 @@ today <- format(today, format="%d-%B-%Y")
 brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
 brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
 
-## to test limiting to data until end of March 2020
+
 
 row.names(brazil_cases) <- brazil_cases[,1]
 # transpose data 
@@ -57,8 +57,8 @@ brazil_cases <- data.table::data.table(brazil_cases)
 #brazil_cases_dat <- data.frame(brazil_io_full)
 brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
 
-## to test limiting to data until end of Oct 2020
-#brazil_cases_dat <- brazil_cases %>% filter(date < as.Date("30-10-2020","%d-%m-%Y"))
+## to test limiting to data until end of May 2020
+brazil_cases_dat <- brazil_cases %>% filter(date <= as.Date("31-05-2020","%d-%m-%Y"))
 
 ## Keep city level data 
 brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
