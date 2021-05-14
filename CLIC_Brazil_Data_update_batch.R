@@ -119,8 +119,22 @@ rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
 gc()
 
 
+### Step 6  Update trends visualisation 
 
-### Step 6  Data prep for the app
+source (paste0(dir_scripts,"CLIC_Brazil_Trends_visualisations.R"),echo=TRUE)
+
+today <- Sys.Date()
+today <- format(today, format="%d-%B-%Y")
+log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
+sink(file=log_file,append=TRUE)
+print("Step 6 - Trends visualisations for the app")
+now_time <- Sys.time() 
+print(now_time)
+closeAllConnections()
+
+
+
+### Step 7  Data prep for the app
 
 
 source (paste0(dir_scripts,"CLIC_Brazil_Data_prep_app.R"),echo=TRUE)
@@ -129,7 +143,7 @@ today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
 sink(file=log_file,append=TRUE)
-print("Step 6 Data Preparation for the app")
+print("Step 7 Data Preparation for the app")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()
@@ -140,7 +154,7 @@ gc()
 
 
 
-### Step 6  Update trends visualisation 
+### Step 5  Update trends visualisation 
 
 source (paste0(dir_scripts,"CLIC_Brazil_Trends_visualisations.R"),echo=TRUE)
 
@@ -148,7 +162,7 @@ today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
 sink(file=log_file,append=TRUE)
-print("Step 7 - Trends visualisations for the app")
+print("Step 5 - Trends visualisations for the app")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()

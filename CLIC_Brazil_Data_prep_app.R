@@ -4,24 +4,16 @@
 ## Paul Mee 11-May-2021
 ###
 
-rm(list=ls())
+##############
+### Directory set up
+### Update this with your local directories
+##############
+dir_scripts <- "C:/github/clic_brazil/"
 
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 
-#  Set home directory  
-if(Sys.info()[['user']]=="eidenale"){
-  # Neal
-  setwd("C:\\Users\\eidenale\\Dropbox\\COVID_cities\\")
-  
-}
-if(Sys.info()[['user']]=="phpupmee"){
-  # Paul
-  setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/")
-  
-}
-if(Sys.info()[['user']]=="eideobra"){
-  # Oli
-  setwd("/Users/eideobra/Dropbox/10_Collab/CADDE/COVID_cities/")
-}
+# loads functions to be used for standardisation
+source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
 
 # Required packages
 if(!require(magrittr)) install.packages("magrittr", repos = "http://cran.us.r-project.org")
@@ -57,26 +49,31 @@ if(!require(thematic)) install.packages("thematic", repos = "http://cran.us.r-pr
 if(!require(bslib)) install.packages("bslib", repos = "http://cran.us.r-project.org")
 if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
 
-rm(list=ls())
 
 
-### Source OB functions 
 
-source("CC_scripts/OB_standardisation_functions.R")
+
 
 DateUntil <- Sys.Date()
 
-cut_off_date = "2020-04-01"
+#cut_off_date = "2020-04-01"
 
 # Read data
-load(fetch_latest(fileDir = "input_data/",
-                  type = "BigStandard"))
-peakDF        <- readRDS("input_data/Peak.rds")
-all_plot_data <- readRDS("input_data/Brazil_rt_prediction-current.RDS")
-total         <- readRDS("input_data/current_total_cases.RDS")
+fname <-  paste0(dir_data_objects,"Brazil_BigStandard_results.RData")
+load(fname)
 
-load("input_data/AUCplot.rdata")
-load("input_data/AUCDF.rdata")
+# Calculate total cases
+c_dat <- BigStandard$standardised_incidence
+date_max <- max(c_dat$date_end)
+c_dat <- c_dat %>% dplyr::filter(c_dat$date_end==date_max)
+total <- sum(c_dat_max$cum_cases)
+rm(c_dat)
+
+peakDF        <- readRDS(paste0(dir_peak_data,"Peak.rds"))
+all_plot_data <- readRDS(paste0(dir_Rt_data,"Brazil_rt_prediction-current.RDS"))
+load(paste0(dir_peak_data,"AUCplot.rdata"))
+load(paste0(dir_peak_data,"AUCDF.rdata"))
+
 
 # Look at max Rt value by group
 max_Rt_vals <- all_plot_data %>% group_by(city_state) %>% top_n(1,Rt_Smooth)
@@ -92,10 +89,12 @@ peakDF <- peakDF[!is.na(peakDF$PredictProb), ]
 peakSF <- st_as_sf(peakDF, coords = c("X", "Y"))
 
 # Load in pre-computed BigWrap dataset
-load(file.path("input_data/Trends_plots_test2021_04_27.RData"))
+
+
+load(file.path(paste0(dir_app_data,"Trends_plots_test.RData")))
 
 # Load State names and abbreviations
-states <- readRDS(file.path("input_data", "statesBR.RDS")) %>%
+states <- readRDS(paste0(dir_app_data,"statesBR.RDS")) %>%
   rename(Region="UF")
 
 Brazil_cases  <- BigStandard$standardised_incidence
@@ -225,4 +224,4 @@ areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
 data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
 
 
-save.image( file = "./input_data/app_files.RDS")
+save.image( file = paste0(dir_app_data,"app_files.RDS"))

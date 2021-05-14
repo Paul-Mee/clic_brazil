@@ -1,42 +1,49 @@
-rm(list = ls())
+### 
+## This code generates the Trends plots
+###
+## Paul Mee 11-May-2021
+###
 
-### Originally written by OB and NA
-### Revised by PM 27th April 2021 
-### Main change - conversion of object to Data table to speed performance
+##############
+### Directory set up
+### Update this with your local directories
+##############
+dir_scripts <- "C:/github/clic_brazil/"
 
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 
-#  Set home directory  and load data 
-if(Sys.info()[['user']]=="eidenale"){
-  # Neal
-  setwd("C:\\Users\\eidenale\\Dropbox\\COVID_cities\\")
-  
-}
-if(Sys.info()[['user']]=="phpupmee"){
-  # Paul
-  setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/")
-  
-}
-if(Sys.info()[['user']]=="eideobra"){
-  # Oli
-  setwd("/Users/eideobra/Dropbox/10_Collab/CADDE/COVID_cities/")
-}
+# loads functions to be used for standardisation
+source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
 
+# libraries
 require(ggplot2) ## plotting
 require(data.table) ## optimise merge
 
-### Source OB functions
 
-source("./CC_scripts/OB_standardisation_functions.R")
 
 # direct read
 
 
 # load in pre-computed Big Standard dataset
-load(fetch_latest(fileDir = "./CC_Intermediate_data_obj/",
-                  type = "BigStandard"))
+fname <-  paste0(dir_data_objects,"Brazil_BigStandard_results.RData")
+load(fname)
+
 
 # preprocessing to re-route beginign of the epidemic depending on chosen area
-c_dat = re.route.origin(BigStandard$standardised_incidence)
+c_dat = as.data.table(re.route.origin(BigStandard$standardised_incidence))
+## Merge covariates
+# Get covariates data 
+load(paste0(dir_covariates,"Brazil_mun_covs.RData"))
+names(SDI)[names(SDI) == 'Area_Name'] <- 'Area'
+names(SDI)[names(SDI) == 'SDI_index'] <- 'SDI'
+SDI <- as.data.table(SDI)
+## Join data tables
+c_dat <- copy(c_dat[SDI,  on = "Area"])
+# drop if date_end is NA
+c_dat <- c_dat [!is.na(c_dat$date_end), ]
+## back to data frame - for back compatibility
+c_dat <- as.data.frame(c_dat)
+
 
 # and add intervention timign data
 c_dat = district.start.date.find(c_dat, BigStandard$Intervention)
@@ -211,10 +218,7 @@ for(i in 1:length(Geographic_scale_opts)){
 }
 
 # save pre-compiled plots
-cur_filename <- paste0("./CC_Intermediate_data_obj/",
-                       "Trends_plots_test",
-                       gsub("-", "_", Sys.Date()),
-                       ".RData")
+cur_filename <- paste0(dir_app_data,"Trends_plots_test.RData")
 save(Trends_plot_list, file = cur_filename)
 
 

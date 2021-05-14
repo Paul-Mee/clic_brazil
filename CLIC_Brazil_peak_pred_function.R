@@ -708,7 +708,7 @@ table(is.na(AreaRecordPredictDF$PredictProb))
 #          ifelse(AreaRecordPredictDF$PredictProb<0.75, "steelblue3", "steelblue4"))), 
 #      pch=20, cex=0.5)
 
-#saveRDS(AreaRecordPredictDF, file = "Peak.rds")
+saveRDS(AreaRecordPredictDF, file = (paste0(dir_peak_data,"Peak.rds")))
 
 # evaluate performance by fitting a similar model to data with the last 30 days removed
 names(AreaRecordMaxDF)<-ifelse(
