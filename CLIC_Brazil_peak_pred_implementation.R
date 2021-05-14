@@ -3,8 +3,6 @@
 ######################################################################
 
 
-rm(list=ls())
-
 ##############
 ### Directory set up
 ### Update this with your local directories

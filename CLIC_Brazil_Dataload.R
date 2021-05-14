@@ -10,7 +10,6 @@ require(data.table)
 
 ### Data clean up
 
-rm(list=ls())
 
 ##############
 ### Directory set up

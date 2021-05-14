@@ -15,7 +15,7 @@ require(sf)
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 
-log_fil_dir <- "C:/github/clic_brazil/log_files/"
+log_fil_dir <- "C:/CADDE_dropbox/Dropbox/COVID_cities/log_files"
 dir_scripts <- "C:/github/clic_brazil/"
 
 
