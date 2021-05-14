@@ -32,7 +32,8 @@ AUCDF<-calc_auc(AUCplot)
 AUCDF
 round(AUCDF[1, "AUC"], 3)
 
-AUCVector[j]<-AUCDF[1, "AUC"]
+#AUCVector[j]<-AUCDF[1, "AUC"]
+AUCVector<-AUCDF[1, "AUC"]
 
 AUCplotName<-paste0("AUCplot", ObjectNameSuffixVector[j])
 print(AUCplotName)

@@ -3,10 +3,9 @@
 
 # based on "PM_peak_batch_v2 alpha-test.R"
 
-AUCfn<-function(FolderName){
+ AUCfn <-function(FolderName){
 
-### Data cleaning - keep tracking objects
-# rm(list= ls()[!(ls() %in% c('log_file','elapsed_time','now_time','now_time1','now_time2','now_time3','now_time4','now_time5'))])
+
 
 # https://stackoverflow.com/questions/47932246/rscript-detect-if-r-script-is-being-called-sourced-from-another-script
 
@@ -19,18 +18,58 @@ AUCfn<-function(FolderName){
 # }
 
 # stop("just avoiding running the whole script while testing.")
+    
+## libraries
+    
+require(data.table)
+require(survival)
+require(ROCR)
+require(plotROC)
 
 source("C:/github/clic_brazil/CLIC_Brazil_standardisation_functions.R")
 
 
     ## simplified data load
-fname <-  paste0(FolderName,"Brazil_BigStandard_results.RData")
+# fname <-  paste0(FolderName,"Brazil_BigStandard_results.RData")
+# print(fname)
+
+fname <-  paste0(dir_data_objects,"Brazil_BigStandard_results.RData")
 print(fname)
     
 load(fname)
 
+
+### Merge covariates data 
+
+
+
 # preprocessing to re-route beginign of the epidemic depending on chosen area
-c_dat = re.route.origin(BigStandard$standardised_incidence)
+c_dat = as.data.table(re.route.origin(BigStandard$standardised_incidence))
+
+# Get covariates data 
+load(paste0(dir_covariates,"Brazil_mun_covs.RData"))
+names(SDI)[names(SDI) == 'Area_Name'] <- 'Area'
+names(SDI)[names(SDI) == 'SDI_index'] <- 'SDI'
+SDI <- as.data.table(SDI)
+
+
+
+## Join data tables
+
+c_dat <- copy(c_dat[SDI,  on = "Area"])
+
+# drop if date_end is NA
+
+c_dat <- c_dat [!is.na(c_dat$date_end), ]
+
+
+## back to data frame - for back compatibility
+
+c_dat <- as.data.frame(c_dat)
+
+detach(package:data.table)
+
+
 # and add intervention timign data
 # c_dat = district.start.date.find(c_dat, BigStandard$Intervention)
 # sort(names(c_dat))
@@ -526,7 +565,7 @@ anovaCox(AreaCoxph167, AreaCoxph7)
 #                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord7 + frailty(Area),
 #                  method="breslow", data=AreaRecordDF)
 # summary(AreaCoxph)
-# 
+#
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord7 + frailty(Area),
 #                  method="breslow", data=AreaRecordDF)
@@ -536,17 +575,17 @@ anovaCox(AreaCoxph167, AreaCoxph7)
 #                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + frailty(Area),
 #                  method="breslow", data=AreaRecordDF)
 # summary(AreaCoxphState)
-# 
+#
 # AreaCoxphPopden<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + popden + frailty(Area),
 #                  method="breslow", data=AreaRecordDF)
 # summary(AreaCoxphPopden)
-# 
+#
 # AreaCoxphSDI<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + SDI + frailty(Area),
 #                  method="breslow", data=AreaRecordDF)
 # summary(AreaCoxphSDI)
-# 
+#
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
 #                  method="breslow", data=AreaRecordDF)
@@ -555,20 +594,20 @@ anovaCox(AreaCoxph167, AreaCoxph7)
 AreaCoxphFormula<-AreaCoxph$formula
 AreaCoxphFormula
 
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord2 + as.factor(State) + SDI + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
-# 
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord2 + SDI + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
-# 
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord2 + as.factor(State) + SDI + frailty(Area),
+                 method="breslow", data=AreaRecordDF)
+summary(AreaCoxph)
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord2 + SDI + frailty(Area),
+                 method="breslow", data=AreaRecordDF)
+summary(AreaCoxph)
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + frailty(Area),
+                 method="breslow", data=AreaRecordDF)
+summary(AreaCoxph)
 
 
 # make new dataset to predict 30 days ahead
@@ -692,16 +731,16 @@ AreaRecordTrainingDF<-AreaRecordTestTrainingDF[
 dim(AreaRecordTrainingDF)
 # AreaRecordTrainingDF[AreaRecordTrainingDF$Area=="São Caetano do Sul_SP",]
 
-# AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
-#                  method="breslow",
-#                  data=AreaRecordTrainingDF)
-#
-# re-use the formula from above
-AreaTrainingCoxph<-coxph(AreaCoxphFormula,
+AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
                  method="breslow",
                  data=AreaRecordTrainingDF)
-summary(AreaTrainingCoxph)
+
+# re-use the formula from above
+# AreaTrainingCoxph<-coxph(AreaCoxphFormula,
+#                  method="breslow",
+#                  data=AreaRecordTrainingDF)
+# summary(AreaTrainingCoxph)
 
 # make the predictions for the next 30 days as if they were unknown
 AreaRecordTrainingMaxDF<-aggregate(Days_since_start ~ Area, max, data=AreaRecordTrainingDF)
@@ -891,7 +930,7 @@ print(round(AUCDF[1, "AUC"], 3))
 
 return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
 
-# }
+
 }
 
 

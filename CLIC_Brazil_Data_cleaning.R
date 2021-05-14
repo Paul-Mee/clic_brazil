@@ -8,7 +8,7 @@
 # Altered to run in batch on the server 
 #rm(list = ls())
 ### Data cleaning
-rm(list=ls())
+
 
 
 ### Required libraries
