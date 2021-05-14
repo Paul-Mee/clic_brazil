@@ -1,7 +1,28 @@
+######################################################################
+# Runs Peak estimation code
+######################################################################
 
 
-AUCfn("C:/github/data/intermediate_data_objects","2021_03_31")
+rm(list=ls())
 
+##############
+### Directory set up
+### Update this with your local directories
+##############
+dir_scripts <- "C:/github/clic_brazil/"
+
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+
+# loads function to be used for peak prediction
+source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))
+
+
+
+### Calle AUCfn 
+## arg1 = directory where Big Standard file is stored
+####
+
+AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects)
 
 #### Output
 
@@ -20,26 +41,9 @@ print(AUCplotName)
 AUCDFName  <-paste0("AUCDF"  , ObjectNameSuffixVector[j])
 print(AUCDFName)
 
-if(Sys.info()[['user']]=="eidenale"){
-  # Neal
-  FolderName<-"C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
-  # save(AUCplot, file = "C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
-  # save(AUCDF  , file = "C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
-}
-if(Sys.info()[['user']]=="phpupmee"){
-  # Paul
-  FolderName<-"C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
-  # save(AUCplot, file = "C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
-  # save(AUCDF  , file = "C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
-}
-if(Sys.info()[['user']]=="eideobra"){
-  # Oli
-  FolderName<-"/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
-  # save(AUCplot, file = "/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
-  # save(AUCDF  , file = "/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
-}
 
-save(AUCplot, file = paste0(FolderName, AUCplotName, ".rdata")) 
-save(AUCDF  , file = paste0(FolderName, AUCDFName  , ".rdata")) 
+
+save(AUCplot, file = paste0(dir_peak_data, AUCplotName, ".rdata")) 
+save(AUCDF  , file = paste0(dir_peak_data, AUCDFName  , ".rdata")) 
 write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
-          file=paste0(FolderName, "AUCbyTime.csv"), row.names = FALSE)
+          file=paste0(dir_peak_data, "AUCbyTime.csv"), row.names = FALSE)

@@ -3,7 +3,7 @@
 
 # based on "PM_peak_batch_v2 alpha-test.R"
 
-AUCfn<-function(FolderName,FileNameSuffix){
+AUCfn<-function(FolderName){
 
 ### Data cleaning - keep tracking objects
 # rm(list= ls()[!(ls() %in% c('log_file','elapsed_time','now_time','now_time1','now_time2','now_time3','now_time4','now_time5'))])
@@ -23,10 +23,8 @@ AUCfn<-function(FolderName,FileNameSuffix){
 source("C:/github/clic_brazil/CLIC_Brazil_standardisation_functions.R")
 
 
-fname <-  paste0(
-   FolderName, 
-   "/Brazil_BigStandard_results_",
-   FileNameSuffix, ".RData")   
+    ## simplified data load
+fname <-  paste0(FolderName,"Brazil_BigStandard_results.RData")
 print(fname)
     
 load(fname)
@@ -534,25 +532,25 @@ anovaCox(AreaCoxph167, AreaCoxph7)
 #                  method="breslow", data=AreaRecordDF)
 # summary(AreaCoxph)
 
-AreaCoxphState<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
-summary(AreaCoxphState)
-
-AreaCoxphPopden<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + popden + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
-summary(AreaCoxphPopden)
-
-AreaCoxphSDI<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + SDI + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
-summary(AreaCoxphSDI)
-
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
-summary(AreaCoxph)
+# AreaCoxphState<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+# summary(AreaCoxphState)
+# 
+# AreaCoxphPopden<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + popden + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+# summary(AreaCoxphPopden)
+# 
+# AreaCoxphSDI<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + SDI + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+# summary(AreaCoxphSDI)
+# 
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+# summary(AreaCoxph)
 
 AreaCoxphFormula<-AreaCoxph$formula
 AreaCoxphFormula
@@ -896,10 +894,6 @@ return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
 # }
 }
 
-## To test
 
-source("C:/github/clic_brazil/CLIC_Brazil_standardisation_functions.R")
-
-AUCfn("C:/github/data/intermediate_data_objects","2021_03_31")
 
 

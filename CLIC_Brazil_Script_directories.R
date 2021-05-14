@@ -4,8 +4,8 @@
 ##############
 
 dir_source_data <-  "C:/github/data/brazil_io/"
-## This directory will grow in size and should be written direct to the cloud
-dir_daily_data <-  "C:/github/data/daily_data/"
+## This directory will grow in size and should ideally be written direct to the cloud
+dir_daily_data <-  "C:/CADDE_dropbox/Dropbox/daily_covid_data"
 dir_formatted_case_data <-  "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data"
 dir_formatted_death_data <-  "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data"
 dir_scripts <- "C:/github/clic_brazil/"
@@ -14,7 +14,7 @@ dir_case_age_dist <- "C:/github/clic_brazil/case_age_dist/"
 dir_interventions <- "C:/github/clic_brazil/interventions/"
 dir_ibge_data <-  "C:/github/clic_brazil/ibge/"
 dir_covariates <- "C:/github/clic_brazil/covariates/"
-dir_data_objects <- "C:/github/data/Intermediate_data_objects/"
+dir_data_objects <- "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data"
 epi_filter_file_sources <- "C:/github/clic_brazil/epifilter/R files/main/"
 dir_Rt_data <-  "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data"
 dir_peak_data <- "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data"
