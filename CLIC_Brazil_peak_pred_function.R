@@ -100,7 +100,7 @@ summary(AreaProfilesDF$Days_since_start)
 # if(RoutineUseScalar){
 #    LastDaySubsetVector<-tail(LastDaySubsetVector,1)
 # }
-# 
+
 # AUCVector<-rep(NA, length(LastDaySubsetVector))
 
 # later will save the results under names distinguished by the following suffices
@@ -867,11 +867,11 @@ par(mfrow=c(1,1))
 # plot(perf, colorize=TRUE)
 # # ...fairly straightforward once you know what argument values to pass to performance()
 
-predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
-pred <- prediction(
-   predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector], 
-        labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
-perf <- performance(pred,"tpr","fpr")
+# predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
+# pred <- prediction(
+#    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector], 
+#         labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
+# perf <- performance(pred,"tpr","fpr")
 # plot(perf, colorize=TRUE)
 
 # https://stackoverflow.com/questions/41523761/how-to-compute-auc-with-rocr-package
@@ -890,12 +890,12 @@ auc_ROCR@y.values[[1]]
 # calc_auc(basicplot)
 
 # # predSubsetVector was calculated above (for the other ROC package)
-AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
-   aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
-AUCplot
-AUCDF<-calc_auc(AUCplot)
-AUCDF
-print(round(AUCDF[1, "AUC"], 3))
+# AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
+#    aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
+# AUCplot
+# AUCDF<-calc_auc(AUCplot)
+# AUCDF
+# print(round(AUCDF[1, "AUC"], 3))
 
 # AUCVector[j]<-AUCDF[1, "AUC"]
 

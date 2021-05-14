@@ -24,6 +24,12 @@ AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects)
 
 #### Output
 
+predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
+pred <- prediction(
+  predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector], 
+  labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
+perf <- performance(pred,"tpr","fpr")
+
 # # predSubsetVector was calculated above (for the other ROC package)
 AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
                   aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
@@ -35,14 +41,14 @@ round(AUCDF[1, "AUC"], 3)
 #AUCVector[j]<-AUCDF[1, "AUC"]
 AUCVector<-AUCDF[1, "AUC"]
 
-AUCplotName<-paste0("AUCplot", ObjectNameSuffixVector[j])
+AUCplotName<-paste0("AUCplot")
 print(AUCplotName)
-AUCDFName  <-paste0("AUCDF"  , ObjectNameSuffixVector[j])
+AUCDFName  <-paste0("AUCDF")
 print(AUCDFName)
 
 
 
 save(AUCplot, file = paste0(dir_peak_data, AUCplotName, ".rdata")) 
 save(AUCDF  , file = paste0(dir_peak_data, AUCDFName  , ".rdata")) 
-write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
-          file=paste0(dir_peak_data, "AUCbyTime.csv"), row.names = FALSE)
+# write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
+#           file=paste0(dir_peak_data, "AUCbyTime.csv"), row.names = FALSE)
