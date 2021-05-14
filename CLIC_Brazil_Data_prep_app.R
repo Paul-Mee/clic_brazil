@@ -66,7 +66,7 @@ load(fname)
 c_dat <- BigStandard$standardised_incidence
 date_max <- max(c_dat$date_end)
 c_dat <- c_dat %>% dplyr::filter(c_dat$date_end==date_max)
-total <- sum(c_dat_max$cum_cases)
+total <- sum(c_dat$cum_cases)
 rm(c_dat)
 
 peakDF        <- readRDS(paste0(dir_peak_data,"Peak.rds"))

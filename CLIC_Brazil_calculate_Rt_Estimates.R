@@ -131,10 +131,10 @@ c_dat_sort$city_state <- as.character(c_dat_sort$city_state)
 #### Creating the required time variables 
 
 # week of year 
-c_dat_sort$day_of_week.f <- wday(c_dat_sort$date,label=TRUE)
-c_dat_sort$day_of_week <- wday(c_dat_sort$date)
+c_dat_sort$day_of_week.f <- lubridate::wday(c_dat_sort$date,label=TRUE)
+c_dat_sort$day_of_week <- lubridate::wday(c_dat_sort$date)
 # Week of year 
-c_dat_sort$week_number <- week(c_dat_sort$date)
+c_dat_sort$week_number <- lubridate::week(c_dat_sort$date)
 c_dat_sort$week_number.f <- factor(week(c_dat_sort$date))
 # day of year 
 # Revised version use days since Jan 1st 2020 rather than day of year to avoid discontinuity around 31st Dec

@@ -57,7 +57,7 @@ brazil_cases <- data.table::data.table(brazil_cases)
 brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
 
 ## to test limiting to data until end of Sept 2020
-brazil_cases_dat <- brazil_cases %>% dplyr::filter(date < as.Date("31-09-2020","%d-%m-%Y"))
+#brazil_cases_dat <- brazil_cases %>% dplyr::filter(date < as.Date("30-09-2020","%d-%m-%Y"))
 
 ## Keep city level data 
 brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
@@ -91,7 +91,7 @@ brazil_cases_dat <- brazil_cases_dat %>%
   group_by(state,city) %>%
   mutate(death_inc = deaths - dplyr::lag(deaths))
 
-
+brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
 
 ### First entry = NA so replace with confirmed value
 brazil_cases_dat$case_inc <- ifelse(is.na(brazil_cases_dat$case_inc), brazil_cases_dat$confirmed, brazil_cases_dat$case_inc)
@@ -101,7 +101,6 @@ brazil_cases_dat$death_inc <- ifelse(is.na(brazil_cases_dat$death_inc), brazil_c
 print(paste( "The total number of cases before correction = " , as.character(sum(brazil_cases_dat$case_inc)) ,sep="")) 
 print(paste( "The total number of deaths before correction = " , as.character(sum(brazil_cases_dat$death_inc)) ,sep="")) 
 
-brazil_cases_dat <- data.table::data.table(brazil_cases_dat)
 
 ### Generate a data table with all dates between the start of data collection and today
 
