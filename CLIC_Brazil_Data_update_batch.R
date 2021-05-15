@@ -15,7 +15,7 @@ require(sf)
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 
-log_fil_dir <- "C:/CADDE_dropbox/Dropbox/COVID_cities/log_files"
+log_fil_dir <- "C:/CADDE_dropbox/Dropbox/COVID_cities/log_files/"
 dir_scripts <- "C:/github/clic_brazil/"
 
 
@@ -34,7 +34,7 @@ source (paste0(dir_scripts,"CLIC_Brazil_Dataload.R"),echo=TRUE)
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
-sink(file=log_file,append=FALSE)
+sink(file=log_file,append=TRUE)
 print("Step 1 - Case data download -  current time")
 now_time <- Sys.time() 
 print(now_time)
