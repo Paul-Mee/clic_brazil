@@ -85,8 +85,11 @@ print(fname)
 load(fname)
 
 
+
+
+
 ### Selecting data  ranges for analysis 
-start_date = as.Date("2020-04-01")
+start_date = as.Date("2021-01-01")
 origin_date = as.Date("2020-01-01")
 cens_date = as.Date("2021-01-14")
 ### Cutting off last two weeks of data 
@@ -97,6 +100,9 @@ cens_date = as.Date("2021-01-14")
 ### Using standardised dataset 
 
 c_dat <- BigStandard$standardised_incidence
+
+
+
 
 ### Data since start date 
 c_dat <- c_dat [which(c_dat$date_end>=format(as.Date(start_date), "%Y-%m-%d"))  ,] 
@@ -325,7 +331,7 @@ for (i in 1:length(city_dat_list)) {
     mean_pred_cases <- mean(city_dat_tmp$mean_pred_inc_cases,na.rm = TRUE)
 
     if( abs(mean_orig_cases-mean_pred_cases) >= 20)  {
-    sink("CC_Scripts/log_files/check_predictions.log",append=TRUE)
+    sink(paste0(dir_results,"check_predictions.log"),append=FALSE))
     print (city_dat_tmp[1,1])
     print("large diff in mean predicted values")
     print("original mean cases")

@@ -232,7 +232,7 @@ brazil_cases_dat_fill <- brazil_cases_dat_fill[with(brazil_cases_dat_fill, order
 
 ## Getting case data in right format
 
-brazil_cases_dat_output <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
+brazil_cases_dat_output <- reshape2::dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
                             brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "cases")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
@@ -266,7 +266,7 @@ saveRDS(brazil_cases_dat_output, file = fname_RDS)
 # ################
 ## Getting death data in right format
 
-brazil_deaths_dat_output <- dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
+brazil_deaths_dat_output <- reshape2::dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
                             brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "deaths")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
