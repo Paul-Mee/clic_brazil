@@ -331,7 +331,7 @@ for (i in 1:length(city_dat_list)) {
     mean_pred_cases <- mean(city_dat_tmp$mean_pred_inc_cases,na.rm = TRUE)
 
     if( abs(mean_orig_cases-mean_pred_cases) >= 20)  {
-    sink(paste0(dir_results,"check_predictions.log"),append=FALSE))
+    sink(paste0(dir_results,"check_predictions.log"),append=FALSE)
     print (city_dat_tmp[1,1])
     print("large diff in mean predicted values")
     print("original mean cases")
