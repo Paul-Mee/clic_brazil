@@ -872,14 +872,14 @@ par(mfrow=c(1,1))
 
 # predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
 # pred <- prediction(
-#    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector], 
+#    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector],
 #         labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
 # perf <- performance(pred,"tpr","fpr")
 # plot(perf, colorize=TRUE)
 
 # https://stackoverflow.com/questions/41523761/how-to-compute-auc-with-rocr-package
-auc_ROCR <- performance(pred, measure = "auc")
-auc_ROCR@y.values[[1]]
+# auc_ROCR <- performance(pred, measure = "auc")
+# auc_ROCR@y.values[[1]]
 
 # practice ROC curve from the plotROC package, with ggplot
 # https://cran.r-project.org/web/packages/plotROC/vignettes/examples.html
@@ -892,16 +892,16 @@ auc_ROCR@y.values[[1]]
 # basicplot
 # calc_auc(basicplot)
 
-# # predSubsetVector was calculated above (for the other ROC package)
+# predSubsetVector was calculated above (for the other ROC package)
 # AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
-#    aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
+#     aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
 # AUCplot
-# AUCDF<-calc_auc(AUCplot)
-# AUCDF
+#  AUCDF<-calc_auc(AUCplot)
+#  AUCDF
 # print(round(AUCDF[1, "AUC"], 3))
-
-# AUCVector[j]<-AUCDF[1, "AUC"]
-
+# 
+#  AUCVector[j]<-AUCDF[1, "AUC"]
+# 
 # AUCplotName<-paste0("AUCplot", ObjectNameSuffixVector[j])
 # print(AUCplotName)
 # AUCDFName  <-paste0("AUCDF"  , ObjectNameSuffixVector[j])

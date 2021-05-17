@@ -47,8 +47,6 @@ AUCDFName  <-paste0("AUCDF")
 print(AUCDFName)
 
 
-
-save(AUCplot, file = paste0(dir_peak_data, AUCplotName, ".rdata")) 
 save(AUCDF  , file = paste0(dir_peak_data, AUCDFName  , ".rdata")) 
-# write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
-#           file=paste0(dir_peak_data, "AUCbyTime.csv"), row.names = FALSE)
+ # write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
+ #          file=paste0(dir_peak_data, "AUCbyTime.csv"), row.names = FALSE)
