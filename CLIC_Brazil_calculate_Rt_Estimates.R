@@ -89,7 +89,7 @@ load(fname)
 
 
 ### Selecting data  ranges for analysis 
-start_date = as.Date("2021-01-01")
+start_date = as.Date("2020-10-01")
 origin_date = as.Date("2020-01-01")
 cens_date = as.Date("2021-01-14")
 ### Cutting off last two weeks of data 
