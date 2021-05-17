@@ -498,6 +498,9 @@ summary(AreaCoxphNull)
 
 table(is.na(AreaRecordDF$State))
 
+### test to remove rows where  DayYesterday = NA
+AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
+
 AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
                     as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
