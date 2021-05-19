@@ -103,16 +103,16 @@ gc()
 
 ### Step 5 Peak prediction forecasting 
 
-source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_implementation.R"),echo=TRUE)
-
-today <- Sys.Date()
-today <- format(today, format="%d-%B-%Y")
-log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
-sink(file=log_file,append=TRUE)
-print("Step 5 - Forecasting -  current time")
-now_time <- Sys.time() 
-print(now_time)
-closeAllConnections()
+# source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_implementation.R"),echo=TRUE)
+# 
+# today <- Sys.Date()
+# today <- format(today, format="%d-%B-%Y")
+# log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
+# sink(file=log_file,append=TRUE)
+# print("Step 5 - Forecasting -  current time")
+# now_time <- Sys.time() 
+# print(now_time)
+# closeAllConnections()
 
 ## Housekeeping clear objects and  memory 
 rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
@@ -132,9 +132,22 @@ now_time <- Sys.time()
 print(now_time)
 closeAllConnections()
 
+### Step 7 Prepare interventions plots
+
+source (paste0(dir_scripts,"CLIC_Brazil_interventions_plot_prep.R"),echo=TRUE)
+
+today <- Sys.Date()
+today <- format(today, format="%d-%B-%Y")
+log_file <- paste("log_files/br_data_batch", today,".log", sep = "")
+sink(file=log_file,append=TRUE)
+print("Step 7 - Prepare interventions plots data")
+now_time <- Sys.time() 
+print(now_time)
+closeAllConnections()
 
 
-### Step 7  Data prep for the app
+
+### Step 8  Data prep for the app
 
 
 source (paste0(dir_scripts,"CLIC_Brazil_Data_prep_app.R"),echo=TRUE)
@@ -143,7 +156,7 @@ today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
 sink(file=log_file,append=TRUE)
-print("Step 7 Data Preparation for the app")
+print("Step 8 Data Preparation for the app")
 now_time <- Sys.time() 
 print(now_time)
 closeAllConnections()

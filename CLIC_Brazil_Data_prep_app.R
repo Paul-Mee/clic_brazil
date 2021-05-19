@@ -223,5 +223,9 @@ areas <- as.character(Brazil_cases_sp$Area[Brazil_cases_sp$cum_cases > 100])
 
 data_available <- data.table(areas=unique(sort(areas[!is.na(areas)])))
 
+### adding intervention plot data 
+
+load(paste0(dir_app_data,"inter_plot_files.RDS"))
+
 
 save.image( file = paste0(dir_app_data,"app_files.RDS"))

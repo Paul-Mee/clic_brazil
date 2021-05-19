@@ -3,8 +3,20 @@
 
 # based on "PM_peak_batch_v2 alpha-test.R"
 
+<<<<<<< HEAD
  #AUCfn <-function(FolderName){
 
+=======
+# AUCfn <-function(FolderName){
+
+##############
+### Directory set up
+### Update this with your local directories
+##############
+dir_scripts <- "C:/github/clic_brazil/"
+
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 
 
 # https://stackoverflow.com/questions/47932246/rscript-detect-if-r-script-is-being-called-sourced-from-another-script
@@ -25,6 +37,7 @@ require(data.table)
 require(survival)
 require(ROCR)
 require(plotROC)
+<<<<<<< HEAD
     
     ##############
     ### Directory set up
@@ -36,6 +49,8 @@ require(plotROC)
     
     # loads functions to be used for standardisation
     source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))    
+=======
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 
 source("C:/github/clic_brazil/CLIC_Brazil_standardisation_functions.R")
 
@@ -500,6 +515,7 @@ for(lagScalar in 2:7){
 CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
                 !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
                 !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4) & !is.na(AreaRecordDF$GapToRecord5) & 
+<<<<<<< HEAD
                 !is.na(AreaRecordDF$GapToRecord6) & !is.na(AreaRecordDF$GapToRecord7)
 table(CompleteSubset)
 
@@ -536,6 +552,31 @@ AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 # summary(AreaCoxph)
+=======
+                !is.na(AreaRecordDF$GapToRecord6) & !is.na(AreaRecordDF$GapToRecord7) 
+table(CompleteSubset)
+
+AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxphNull)
+
+table(is.na(AreaRecordDF$State))
+
+### test to remove NA from DayYesterday
+AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph)
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    popden + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph)
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph)
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 
 # the following does not work for some reason
 # anova(AreaCoxphNull, AreaCoxph)
@@ -550,6 +591,7 @@ AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  data=AreaRecordDF, subset=CompleteSubset)
 # summary(AreaCoxph)
 
+<<<<<<< HEAD
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  status)~ 1 + frailty(Area),method="breslow", 
 #                  data=AreaRecordDF, subset=CompleteSubset)
@@ -559,6 +601,17 @@ AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
 #                  data=AreaRecordDF, subset=CompleteSubset)
 # summary(AreaCoxph2)
+=======
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 status)~ 1 + frailty(Area),method="breslow", 
+                 data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph)
+
+AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
+                 data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph2)
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 
 # anova(AreaCoxph2, AreaCoxph)
 # anova(AreaCoxph, AreaCoxph2)
@@ -573,6 +626,7 @@ anovaCox<-function(model1, model2){
 }
 anovaCox(AreaCoxph, AreaCoxph2)
 
+<<<<<<< HEAD
 # AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
 #                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
@@ -584,6 +638,19 @@ anovaCox(AreaCoxph, AreaCoxph2)
 #                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 # summary(AreaCoxph167)
 # anovaCox(AreaCoxph167, AreaCoxph7)
+=======
+AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
+                 method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph7)
+anovaCox(AreaCoxph2, AreaCoxph7)
+
+AreaCoxph167<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + frailty(Area),
+                 method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+summary(AreaCoxph167)
+anovaCox(AreaCoxph167, AreaCoxph7)
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 
 # keep those days but no longer use the subset
 
@@ -618,6 +685,7 @@ anovaCox(AreaCoxph, AreaCoxph2)
 #                  method="breslow", data=AreaRecordDF)
 # summary(AreaCoxph)
 
+<<<<<<< HEAD
 # AreaCoxphFormula<-AreaCoxph$formula
 # AreaCoxphFormula
 # 
@@ -634,6 +702,21 @@ anovaCox(AreaCoxph, AreaCoxph2)
 # 
 # Final version of the model
 # 
+=======
+AreaCoxphFormula<-AreaCoxph$formula
+AreaCoxphFormula
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord2 + as.factor(State) + SDI + frailty(Area),
+                 method="breslow", data=AreaRecordDF)
+summary(AreaCoxph)
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord2 + SDI + frailty(Area),
+                 method="breslow", data=AreaRecordDF)
+summary(AreaCoxph)
+
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
                  as.numeric(status))~ GapToRecord + frailty(Area),
                  method="breslow", data=AreaRecordDF)
@@ -899,14 +982,23 @@ par(mfrow=c(1,1))
 
 # predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
 # pred <- prediction(
+<<<<<<< HEAD
 #    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector],
+=======
+#    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector], 
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 #         labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
 # perf <- performance(pred,"tpr","fpr")
 # plot(perf, colorize=TRUE)
 
 # https://stackoverflow.com/questions/41523761/how-to-compute-auc-with-rocr-package
+<<<<<<< HEAD
 # auc_ROCR <- performance(pred, measure = "auc")
 # auc_ROCR@y.values[[1]]
+=======
+auc_ROCR <- performance(pred, measure = "auc")
+auc_ROCR@y.values[[1]]
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 
 # practice ROC curve from the plotROC package, with ggplot
 # https://cran.r-project.org/web/packages/plotROC/vignettes/examples.html
@@ -919,6 +1011,7 @@ par(mfrow=c(1,1))
 # basicplot
 # calc_auc(basicplot)
 
+<<<<<<< HEAD
 # predSubsetVector was calculated above (for the other ROC package)
 # AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
 #     aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
@@ -929,6 +1022,18 @@ par(mfrow=c(1,1))
 # 
 #  AUCVector[j]<-AUCDF[1, "AUC"]
 # 
+=======
+# # predSubsetVector was calculated above (for the other ROC package)
+# AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
+#    aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
+# AUCplot
+# AUCDF<-calc_auc(AUCplot)
+# AUCDF
+# print(round(AUCDF[1, "AUC"], 3))
+
+# AUCVector[j]<-AUCDF[1, "AUC"]
+
+>>>>>>> ddf38243796d96a62dd45709b6ea4a81f1fab07b
 # AUCplotName<-paste0("AUCplot", ObjectNameSuffixVector[j])
 # print(AUCplotName)
 # AUCDFName  <-paste0("AUCDF"  , ObjectNameSuffixVector[j])
