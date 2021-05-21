@@ -23,6 +23,8 @@ source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 
+#test
+
 ##############
 ### API call to get data 
 #############
