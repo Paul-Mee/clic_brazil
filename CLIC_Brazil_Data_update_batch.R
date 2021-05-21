@@ -132,6 +132,10 @@ now_time <- Sys.time()
 print(now_time)
 closeAllConnections()
 
+## Housekeeping clear objects and  memory 
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
+gc()
+
 ### Step 7 Prepare interventions plots
 
 source (paste0(dir_scripts,"CLIC_Brazil_interventions_plot_prep.R"),echo=TRUE)
@@ -145,6 +149,9 @@ now_time <- Sys.time()
 print(now_time)
 closeAllConnections()
 
+## Housekeeping clear objects and  memory 
+rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
+gc()
 
 
 ### Step 8  Data prep for the app
@@ -161,9 +168,7 @@ now_time <- Sys.time()
 print(now_time)
 closeAllConnections()
 
-## Housekeeping clear objects and  memory 
-rm(list= ls()[!(ls() %in% c('log_fil_dir','dir_scripts'))])
-gc()
+
 
 
 

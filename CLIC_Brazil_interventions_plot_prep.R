@@ -75,7 +75,7 @@ colnames(Int_long)[3] = "Intervention_type"
 
 
 
-rm(list= ls()[!(ls() %in% c('Int_long','dir_app_data'))])
+rm(list= ls()[!(ls() %in% c('Int_long','dir_app_data','log_fil_dir'))])
 
 save.image( file = paste0(dir_app_data,"inter_plot_files.RDS"))
 

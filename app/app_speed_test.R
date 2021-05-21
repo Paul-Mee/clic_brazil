@@ -1,6 +1,8 @@
 ## Additions for benchmarking code
 rm(list=ls())
 start_time <- Sys.time()
+
+
 # Required packages
 if(!require(magrittr)) install.packages("magrittr", repos = "http://cran.us.r-project.org")
 if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
@@ -36,9 +38,11 @@ if(!require(bslib)) install.packages("bslib", repos = "http://cran.us.r-project.
 if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
 
 # # Load global variables
-# app_title <- "COVID-19 Local Information Comparison (CLIC Brazil)"
-# 
-# options(shiny.sanitize.errors = TRUE)
+app_title <- "COVID-19 Local Information Comparison (CLIC Brazil)"
+# # 
+options(shiny.sanitize.errors = TRUE)
+
+
 # 
 # source(file.path("input_data", "OB_standardisation_functions.R"))
 # 
@@ -213,9 +217,9 @@ if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.
 # save.image( file = "./input_data/app_files.RDS")
 
 ### Test of speed difference with data load of preprocessed data 
-rm(list=ls())
+
 start_time <- Sys.time()
-load(file = "./input_data/app_files.RDS")
+load(file = "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/app_files.RDS")
 end_time <- Sys.time()
 new_time <- end_time - start_time
 new_time
@@ -935,59 +939,106 @@ server <- function(input, output, session) {
     Int_long$PlotCol = "black"
     Int_long$PlotCol[Int_long$Area == input$area_select] = "red"
     
-    # polygons for before and after outbreak began
-    poly <- data.frame(y = c(min(Int_long$Intervention_type),
-                             min(Int_long$Intervention_type),
-                             rep(0, 4),
-                             max(Int_long$Intervention_type),
-                             max(Int_long$Intervention_type)),
-                       x = c(0, 5, 5, 0, 0, 5, 5, 0),
-                       Fcol = c(rep("blue", 4), rep("red", 4)))
+    # filtering and ordering
+    IL_Emergency <- Int_long[Int_long$Intervention_type == "Emergency declared", ]
+    IL_Emergency = IL_Emergency[order(IL_Emergency$time), ]
+    IL_Emergency$Order = 1:nrow(IL_Emergency)
     
+    IL_Transport <- Int_long[Int_long$Intervention_type == "Transport restrictions", ]
+    IL_Transport = IL_Transport[order(IL_Transport$time), ]
+    IL_Transport$Order = 1:nrow(IL_Transport)
+    
+    IL_Retail <- Int_long[Int_long$Intervention_type == "Industry Retail Service restrictions", ]
+    IL_Retail = IL_Retail[order(IL_Retail$time), ]
+    IL_Retail$Order = 1:nrow(IL_Retail)
+    
+    IL_School <- Int_long[Int_long$Intervention_type == "School closure", ]
+    IL_School = IL_School[order(IL_School$time), ]
+    IL_School$Order = 1:nrow(IL_School)
+    
+    
+    emergency_time <- IL_Emergency  %>% select(time)
+    emergency_time <- emergency_time[1,1]
+    transport_time <- IL_Transport  %>% select(time)
+    transport_time <- transport_time[1,1]
+    retail_time <- IL_Retail  %>% select(time)
+    retail_time <- retail_time[1,1]
+    school_time <- IL_School  %>% select(time)
+    school_time <- school_time[1,1]
+    
+    
+    
+    
+    # polygons for before and after outbreak began
+    # poly <- data.frame(y = c(min(Int_long$Intervention_type),
+    #                          min(Int_long$Intervention_type),
+    #                          rep(0, 4),
+    #                          max(Int_long$Intervention_type),
+    #                          max(Int_long$Intervention_type)),
+    #                    x = c(0, 5, 5, 0, 0, 5, 5, 0),
+    #                    Fcol = c(rep("blue", 4), rep("red", 4)))
+    # 
     dbx <- list(of1=Int_long,
-                of2=poly,
-                of3=E_L,
-                of4=z_dat)
+                of2=IL_Emergency,
+                of3=IL_Transport,
+                of4=IL_Retail,
+                of5=IL_School,
+                of6=emergency_time,
+                of7=transport_time,
+                of8=retail_time,
+                of9=school_time,
+                of10=E_L)
   })
   
     output$p2 <- renderPlot({
       
       y_lab <- "Days since start of the outbreak (incidence above 1 case per 10,000 residents)"
       
-      p2 <- ggplot(plotdb()$of1, aes(x=time, y=Intervention_type)) +
-        geom_boxplot(aes(x=time, y=Intervention_type,
-                         alpha = 0.75), 
-                     outlier.shape = NA, show.legend = FALSE)+
-        geom_polygon(data = plotdb()$of2, 
-                     aes(x = x, y =y, fill = Fcol, 
-                         alpha = 0.5), 
-                     show.legend = TRUE) +
-        scale_fill_manual("", 
-                          values = c("#00BFC4", "#F8766D"),
-                          labels=c("Before outbreak",
-                                   "Outbreak")) +
-        geom_jitter(size = 2, alpha = 0.1) +
-        geom_boxplot(aes(x=time, y=Intervention_type,
-                         alpha = 0.75),
-                     outlier.shape = NA, show.legend = FALSE)+
-        geom_point(aes(x=time, y=Intervention_type), 
-                   data = plotdb()$of1[plotdb()$of1$Area == input$area_select, ],
-                   color = rgb(1,0,0,0.5), size= 3) +
-        scale_alpha(guide = 'none') +
-        xlab("") +
-        ylab(y_lab) +
-        coord_flip() +
-        ggtitle("Timing of interventions in different municipalities") +
-        theme_classic() +
-        theme(axis.text.x = element_text(size=11),
-              axis.text.y = element_text(size=11),
-              axis.title.x = element_text(size=14),
-              axis.title.y = element_text(size=14)) +
-        theme(plot.title = element_text(hjust = 0.5)) +
-        theme(legend.text = element_text(size = 11)) +
-        theme(plot.title = element_text(size=18))
+      Emergency_plot <- ggplot(plotdb()$of1, aes(x = time, y = Order)) +
+        geom_line(aes(colour = plotdb()$of1$PlotCol),size = 1, show.legend = FALSE) +  
+        scale_colour_manual(values=c("black", "red")) +
+        geom_vline(xintercept = plotdb()$of1, linetype = "longdash", colour = "Black") +
+        xlab("Days since first cases detected locally") +
+        ylab("Cumulative municipalities") +
+        ggtitle("Emergency declared") +
+        theme_bw()
       
-      p2
+      Emergency_plot
+      
+      # p2 <- ggplot(plotdb()$of1, aes(x=time, y=Intervention_type)) +
+      #   geom_boxplot(aes(x=time, y=Intervention_type,
+      #                    alpha = 0.75), 
+      #                outlier.shape = NA, show.legend = FALSE)+
+      #   geom_polygon(data = plotdb()$of2, 
+      #                aes(x = x, y =y, fill = Fcol, 
+      #                    alpha = 0.5), 
+      #                show.legend = TRUE) +
+      #   scale_fill_manual("", 
+      #                     values = c("#00BFC4", "#F8766D"),
+      #                     labels=c("Before outbreak",
+      #                              "Outbreak")) +
+      #   geom_jitter(size = 2, alpha = 0.1) +
+      #   geom_boxplot(aes(x=time, y=Intervention_type,
+      #                    alpha = 0.75),
+      #                outlier.shape = NA, show.legend = FALSE)+
+      #   geom_point(aes(x=time, y=Intervention_type), 
+      #              data = plotdb()$of1[plotdb()$of1$Area == input$area_select, ],
+      #              color = rgb(1,0,0,0.5), size= 3) +
+      #   scale_alpha(guide = 'none') +
+      #   xlab("") +
+      #   ylab(y_lab) +
+      #   coord_flip() +
+      #   ggtitle("Timing of interventions in different municipalities") +
+      #   theme_classic() +
+      #   theme(axis.text.x = element_text(size=11),
+      #         axis.text.y = element_text(size=11),
+      #         axis.title.x = element_text(size=14),
+      #         axis.title.y = element_text(size=14)) +
+      #   theme(plot.title = element_text(hjust = 0.5)) +
+      #   theme(legend.text = element_text(size = 11)) +
+      #   theme(plot.title = element_text(size=18))
+      # 
+      # p2
     
   })
   
