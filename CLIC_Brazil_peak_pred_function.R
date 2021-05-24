@@ -1,12 +1,17 @@
 
-# work flow:
+# general work flow for git:
 # 0) "Pull" (blue arrow)
 # 1) edit file
 # 2) save locally (as normal)
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
 # 4) in the resulting window, having put a comment for the commit, "Push" (or can push in another window)
 
-# Paul demoing a code change
+# for this particular file
+#
+# edit "CLIC_Brazil_Script_directories.R" so that for Neal the folders are set right for him, 
+#    by enclosing them in an "if" to be called if he is the user
+
+
 
 # function to help calculate AUC for different datasets
 
