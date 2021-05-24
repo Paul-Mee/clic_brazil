@@ -1,5 +1,6 @@
 
 # work flow:
+# 0) "Pull" (blue arrow)
 # 1) edit file
 # 2) save locally (as normal)
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
