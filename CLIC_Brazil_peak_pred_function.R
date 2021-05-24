@@ -1,4 +1,9 @@
 
+# work flow:
+# 1) edit file
+# 2) save locally (as normal)
+# 3) in the "Environment" pane, select the file under "Staged" then "Commit"
+
 # function to help calculate AUC for different datasets
 
 # based on "PM_peak_batch_v2 alpha-test.R"
