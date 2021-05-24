@@ -10,7 +10,8 @@
 #
 # edit "CLIC_Brazil_Script_directories.R" so that for Neal the folders are set right for him, 
 #    by enclosing them in an "if" to be called if he is the user
-
+# run the first three steps in "CLIC_Brazil_Data_update_batch.R"
+# then "CLIC_Brazil_standardisation_implementation.R" which is a wrapper for the current file
 
 
 # function to help calculate AUC for different datasets
