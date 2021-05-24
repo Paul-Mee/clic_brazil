@@ -5,6 +5,8 @@
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
 # 4) in the resulting window, having put a comment for the commit, "Push" (or can push in another window)
 
+# Paul demoing a code change
+
 # function to help calculate AUC for different datasets
 
 # based on "PM_peak_batch_v2 alpha-test.R"
