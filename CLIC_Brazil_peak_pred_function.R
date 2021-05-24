@@ -3,6 +3,7 @@
 # 1) edit file
 # 2) save locally (as normal)
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
+# 4) in the resulting window, having put a comment for the commit, "Push" (or can push in another window)
 
 # function to help calculate AUC for different datasets
 
