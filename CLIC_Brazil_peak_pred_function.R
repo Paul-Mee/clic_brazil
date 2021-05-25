@@ -41,7 +41,8 @@ require(survival)
 require(ROCR)
 require(plotROC)
 
-source("C:/github/clic_brazil/CLIC_Brazil_standardisation_functions.R")
+source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
+        
 
 
     ## simplified data load

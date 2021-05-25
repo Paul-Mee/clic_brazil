@@ -5,7 +5,7 @@
 
 ##############
 ### Directory set up
-### Update this with your local directories
+### Update this with your local directory
 ##############
 dir_scripts <- "C:/github/clic_brazil/"
 
