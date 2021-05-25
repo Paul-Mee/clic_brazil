@@ -8,7 +8,7 @@ dir_scripts <- "C:/github/clic_brazil/"
 
 source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 
-load(paste0(dir_app_data,"app_files.RDS"))
+load(paste0(dir_app_data,"inter_plot_files.RDS"))
 
 
 tmp_place <- "São João das Missões_MG"
