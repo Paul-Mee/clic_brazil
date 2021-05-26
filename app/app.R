@@ -211,7 +211,7 @@ ui <- navbarPage(
                         br(), br(),
                         br(), br(),
                         plotOutput("p2",
-                                   height="400px"),
+                                   height="650px"),
                         br(),
                         htmlOutput("intervention_text"),
                         br(),br(),br()
@@ -738,57 +738,87 @@ server <- function(input, output, session) {
     
     # precompute a variable that states whether interventions in 
     # the local area were later or earlier than the mean
-    E_L <- Int_long[Int_long$Area ==
-                      input$area_select, "Intervention_type"] >= 
-      aggregate(Intervention_type ~ time, 
+    E_L <- Int_long[Int_long$Area == input$area_select, 
+                    "Intervention_type"] >= 
+      aggregate(Intervention_type~time, 
                 Int_long,FUN = mean)$Intervention_type
     Int_long$PlotCol = "black"
-    Int_long$PlotCol[Int_long$Area == input$area_select] = "red"
+    Int_long$PlotCol[Int_long$Intervention_type >= 0] = "red"
     
-    # polygons for before and after outbreak began
-    poly <- data.frame(y = c(min(Int_long$Intervention_type),
-                             min(Int_long$Intervention_type),
-                             rep(0, 4),
-                             max(Int_long$Intervention_type),
-                             max(Int_long$Intervention_type)),
-                       x = c(0, 5, 5, 0, 0, 5, 5, 0),
-                       Fcol = c(rep("blue", 4), rep("red", 4)))
+    ### Fix variable names for time and intervention type
     
-    dbx <- list(of1=Int_long,
-                of2=poly,
+    names(Int_long)[3] <- "tmp"
+    names(Int_long)[2] <- "Intervention_type"
+    names(Int_long)[3] <- "time"
+    
+    # new cumulative plot
+    # x axis is going to be time (days between intervention deployed and
+    # outbreak arrival)
+    # y axis is going to be number of municipalities
+    
+    # filtering and ordering
+    IL_Emergency <- Int_long[Int_long$Intervention_type == 
+                               "Emergency declared", ]
+    IL_Emergency = IL_Emergency[order(IL_Emergency$time), ]
+    IL_Emergency$Order = 1:nrow(IL_Emergency)
+    
+    IL_Transport <- Int_long[Int_long$Intervention_type ==
+                               "Transport restrictions", ]
+    IL_Transport = IL_Transport[order(IL_Transport$time), ]
+    IL_Transport$Order = 1:nrow(IL_Transport)
+    
+    IL_Retail <- Int_long[Int_long$Intervention_type == 
+                            "Industry Retail Service restrictions", ]
+    IL_Retail = IL_Retail[order(IL_Retail$time), ]
+    IL_Retail$Order = 1:nrow(IL_Retail)
+    
+    IL_School <- Int_long[Int_long$Intervention_type == 
+                            "School closure", ]
+    IL_School = IL_School[order(IL_School$time), ]
+    IL_School$Order = 1:nrow(IL_School)
+    
+    emergency_time <- IL_Emergency %>% 
+      filter(Area==input$area_select)  %>% 
+      select(time)
+    emergency_time <- emergency_time[1,1]
+    transport_time <- IL_Transport %>% 
+      filter(Area==input$area_select)  %>% 
+      select(time)
+    transport_time <- transport_time[1,1]
+    retail_time <- IL_Retail %>% 
+      filter(Area==input$area_select)  %>% 
+      select(time)
+    retail_time <- retail_time[1,1]
+    school_time <- IL_School %>% 
+      filter(Area==input$area_select)  %>% 
+      select(time)
+    school_time <- school_time[1,1]
+    
+    dbx <- list(of1=IL_Emergency,
+                of2=IL_Transport,
                 of3=E_L,
-                of4=z_dat)
+                of4=z_dat,
+                of5=IL_Retail,
+                of6=IL_School,
+                of7=emergency_time,
+                of8=transport_time,
+                of9=retail_time,
+                of10=school_time)
   })
   
     output$p2 <- renderPlot({
       
-      y_lab <- "Days since start of the outbreak (incidence above 1 case per 10,000 residents)"
-      
-      p2 <- ggplot(plotdb()$of1, aes(x=time, y=Intervention_type)) +
-        geom_boxplot(aes(x=time, y=Intervention_type,
-                         alpha = 0.75), 
-                     outlier.shape = NA, show.legend = FALSE)+
-        geom_polygon(data = plotdb()$of2, 
-                     aes(x = x, y =y, fill = Fcol, 
-                         alpha = 0.5), 
-                     show.legend = TRUE) +
-        scale_fill_manual("", 
-                          values = c("#00BFC4", "#F8766D"),
-                          labels=c("Before outbreak",
-                                   "Outbreak")) +
-        geom_jitter(size = 2, alpha = 0.1) +
-        geom_boxplot(aes(x=time, y=Intervention_type,
-                         alpha = 0.75),
-                     outlier.shape = NA, show.legend = FALSE)+
-        geom_point(aes(x=time, y=Intervention_type), 
-                   data = plotdb()$of1[plotdb()$of1$Area == input$area_select, ],
-                   color = rgb(1,0,0,0.5), size= 3) +
-        scale_alpha(guide = 'none') +
-        xlab("") +
-        ylab(y_lab) +
-        coord_flip() +
-        ggtitle("Timing of interventions in different municipalities") +
-        theme_classic() +
+      p1 <- ggplot(plotdb()$of1, aes(x = time, y = Order)) +
+        geom_line(aes(colour = PlotCol),size = 1, 
+                  show.legend = FALSE) +  
+        scale_colour_manual(values=c("black", "red")) +
+        geom_vline(xintercept = plotdb()$of7, 
+                   linetype = "longdash", 
+                   colour = "Black") +
+        xlab("Days since first cases detected locally") +
+        ylab("Cumulative municipalities") +
+        ggtitle("Emergency declared") +
+        theme_bw()  +
         theme(axis.text.x = element_text(size=11),
               axis.text.y = element_text(size=11),
               axis.title.x = element_text(size=14),
@@ -797,7 +827,62 @@ server <- function(input, output, session) {
         theme(legend.text = element_text(size = 11)) +
         theme(plot.title = element_text(size=18))
       
-      p2
+      p2 <- ggplot(plotdb()$of2, aes(x = time, y = Order)) +
+        geom_line(aes(colour = PlotCol),
+                  size = 1, show.legend = FALSE) + 
+        scale_colour_manual(values=c("black", "red")) +
+        geom_vline(xintercept = plotdb()$of8,
+                   linetype = "longdash", colour = "Black") +
+        xlab("Days since first cases detected locally") +
+        ylab("Cumulative municipalities") +
+        ggtitle("Transport restrictions") +
+        theme_bw() +
+        theme(axis.text.x = element_text(size=11),
+              axis.text.y = element_text(size=11),
+              axis.title.x = element_text(size=14),
+              axis.title.y = element_text(size=14)) +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        theme(legend.text = element_text(size = 11)) +
+        theme(plot.title = element_text(size=18))
+      
+      p3 <- ggplot(plotdb()$of5, aes(x = time, y = Order)) +
+        geom_line(aes(colour = PlotCol),size = 1, show.legend = FALSE) + 
+        scale_colour_manual(values=c("black", "red")) +
+        geom_vline(xintercept = plotdb()$of9, 
+                   linetype = "longdash", colour = "Black") +
+        xlab("Days since first cases detected locally") +
+        ylab("Cumulative municipalities") +
+        ggtitle("Industry, retail and service restrictions") +
+        theme_bw() +
+        theme(axis.text.x = element_text(size=11),
+              axis.text.y = element_text(size=11),
+              axis.title.x = element_text(size=14),
+              axis.title.y = element_text(size=14)) +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        theme(legend.text = element_text(size = 11)) +
+        theme(plot.title = element_text(size=18))
+      
+      p4 <- ggplot(plotdb()$of6, aes(x = time, y = Order)) +
+        geom_line(aes(colour = PlotCol),size = 1,
+                  show.legend = FALSE) + 
+        scale_colour_manual(values=c("black", "red")) +
+        geom_vline(xintercept = plotdb()$of10, 
+                   linetype = "longdash", colour = "Black") +
+        xlab("Days since first cases detected locally") +
+        ylab("Cumulative municipalities") +
+        ggtitle("School closure") +
+        theme_bw() +
+        theme(axis.text.x = element_text(size=11),
+              axis.text.y = element_text(size=11),
+              axis.title.x = element_text(size=14),
+              axis.title.y = element_text(size=14)) +
+        theme(plot.title = element_text(hjust = 0.5)) +
+        theme(legend.text = element_text(size = 11)) +
+        theme(plot.title = element_text(size=18))
+      
+      
+      ggarrange(p1, p2, p3, p4,
+                ncol = 2, nrow = 2)
     
   })
   

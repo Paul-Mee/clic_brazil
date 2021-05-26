@@ -8,15 +8,19 @@ dir_scripts <- "C:/github/clic_brazil/"
 
 source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 
-load(paste0(dir_app_data,"app_files.RDS"))
+# load(paste0(dir_app_data,"app_files.RDS"))
 
 
 tmp_place <- "São João das Missões_MG"
 #tmp_place <- "São Caetano do Sul_SP"
 #tmp_place <- "Manaus_AM"
 
-# precompute a variable that states whether interventions in the local area were later or earlier than the mean
-E_L <- Int_long[Int_long$Area == tmp_place, "Intervention_type"] >= aggregate(Intervention_type ~ time, Int_long,FUN = mean)$Intervention_type
+# precompute a variable that states whether interventions in the local
+# area were later or earlier than the mean
+E_L <- Int_long[Int_long$Area == tmp_place, 
+                "Intervention_type"] >= 
+  aggregate(time ~ Intervention_type, 
+            Int_long,FUN = mean)$Intervention_type
 Int_long$PlotCol = "black"
 Int_long$PlotCol[Int_long$Intervention_type >= 0] = "red"
 
@@ -66,7 +70,8 @@ school_time <- school_time[1,1]
 Emergency_plot <- ggplot(IL_Emergency, aes(x = time, y = Order)) +
   geom_line(aes(colour = PlotCol),size = 1, show.legend = FALSE) +  
   scale_colour_manual(values=c("black", "red")) +
-  geom_vline(xintercept = emergency_time, linetype = "longdash", colour = "Black") +
+  geom_vline(xintercept = emergency_time, 
+             linetype = "longdash", colour = "Black") +
   xlab("Days since first cases detected locally") +
   ylab("Cumulative municipalities") +
   ggtitle("Emergency declared") +
@@ -75,7 +80,8 @@ Emergency_plot <- ggplot(IL_Emergency, aes(x = time, y = Order)) +
 Transport_plot <- ggplot(IL_Transport, aes(x = time, y = Order)) +
   geom_line(aes(colour = PlotCol),size = 1, show.legend = FALSE) + 
   scale_colour_manual(values=c("black", "red")) +
-  geom_vline(xintercept = transport_time, linetype = "longdash", colour = "Black") +
+  geom_vline(xintercept = transport_time,
+             linetype = "longdash", colour = "Black") +
   xlab("Days since first cases detected locally") +
   ylab("Cumulative municipalities") +
   ggtitle("Transport restrictions") +
@@ -84,7 +90,8 @@ Transport_plot <- ggplot(IL_Transport, aes(x = time, y = Order)) +
 Retail_plot <- ggplot(IL_Retail, aes(x = time, y = Order)) +
   geom_line(aes(colour = PlotCol),size = 1, show.legend = FALSE) + 
   scale_colour_manual(values=c("black", "red")) +
-  geom_vline(xintercept = retail_time, linetype = "longdash", colour = "Black") +
+  geom_vline(xintercept = retail_time, 
+             linetype = "longdash", colour = "Black") +
   xlab("Days since first cases detected locally") +
   ylab("Cumulative municipalities") +
   ggtitle("Industry, retail and service restrictions") +
@@ -93,7 +100,8 @@ Retail_plot <- ggplot(IL_Retail, aes(x = time, y = Order)) +
 School_plot <- ggplot(IL_School, aes(x = time, y = Order)) +
   geom_line(aes(colour = PlotCol),size = 1, show.legend = FALSE) + 
   scale_colour_manual(values=c("black", "red")) +
-  geom_vline(xintercept = school_time, linetype = "longdash", colour = "Black") +
+  geom_vline(xintercept = school_time, 
+             linetype = "longdash", colour = "Black") +
   xlab("Days since first cases detected locally") +
   ylab("Cumulative municipalities") +
   ggtitle("School closure") +
@@ -102,7 +110,10 @@ School_plot <- ggplot(IL_School, aes(x = time, y = Order)) +
 
 library(ggpubr)
 
-combined_plot <- ggarrange(Emergency_plot, Transport_plot, Retail_plot, School_plot,
+combined_plot <- ggarrange(Emergency_plot,
+                           Transport_plot, 
+                           Retail_plot, 
+                           School_plot,
                            ncol = 2, nrow = 2)
 
 combined_plot
