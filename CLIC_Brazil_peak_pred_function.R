@@ -6,12 +6,11 @@
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
 # 4) in the resulting window, having put a comment for the commit, "Push" (or can push in another window)
 
-# for this particular file
+# for this particular task of debugging the peak prediction
 #
 # edit "CLIC_Brazil_Script_directories.R" so that for Neal the folders are set right for him, 
-#    by enclosing them in an "if" to be called if he is the user
-# run the first three steps in "CLIC_Brazil_Data_update_batch.R"
-# then "CLIC_Brazil_standardisation_implementation.R" which is a wrapper for the current file
+#    by enclosing them in an "if" to be called if he is the user: DONE (at least 1st version)
+# then run "CLIC_Brazil_peak_pred_implementation.R" which is a wrapper for the current file
 
 
 # function to help calculate AUC for different datasets
@@ -41,7 +40,8 @@ require(survival)
 require(ROCR)
 require(plotROC)
 
-source("C:/github/clic_brazil/CLIC_Brazil_standardisation_functions.R")
+source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
+        
 
 
     ## simplified data load

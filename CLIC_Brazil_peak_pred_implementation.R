@@ -5,11 +5,15 @@
 
 ##############
 ### Directory set up
-### Update this with your local directories
+### Update this with your local directory
 ##############
 dir_scripts <- "C:/github/clic_brazil/"
 
-source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+if(Sys.info()[['user']]=="eidenale"){
+   dir_scripts <- "C:/Users/eidenale/Documents/clic_brazil/"
+}
+
+source(paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 
 # loads function to be used for peak prediction
 source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))

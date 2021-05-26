@@ -5,7 +5,7 @@
 
 dir_source_data <-  "C:/github/data/brazil_io/"
 ## This directory will grow in size and should ideally be written direct to the cloud
-dir_daily_data <-  "C:/CADDE_dropbox/Dropbox/daily_covid_data"
+dir_daily_data <-  "C:/CADDE_dropbox/Dropbox/daily_covid_data/"
 dir_formatted_case_data <-  "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/"
 dir_formatted_death_data <-  "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/"
 dir_scripts <- "C:/github/clic_brazil/"
@@ -33,7 +33,7 @@ if(Sys.info()[['user']]=="eidenale"){
    dir_interventions        <- "C:/Users/eidenale/Documents/clic_brazil/interventions/"
    dir_ibge_data            <- "C:/Users/eidenale/Documents/clic_brazil/ibge/"
    dir_covariates           <- "C:/Users/eidenale/Documents/clic_brazil/covariates/"
-   dir_data_objects         <- "C:/Users/eidenale/Dropbox/COVID_cities/input_data"
+   dir_data_objects         <- "C:/Users/eidenale/Dropbox/COVID_cities/input_data/"
    epi_filter_file_sources  <- "C:/Users/eidenale/Documents/clic_brazil/epifilter/R files/main/"
    dir_Rt_data              <- "C:/Users/eidenale/Dropbox/COVID_cities/input_data"
    dir_peak_data            <- "C:/Users/eidenale/Dropbox/COVID_cities/input_data"
