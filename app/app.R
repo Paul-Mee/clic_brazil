@@ -740,7 +740,7 @@ server <- function(input, output, session) {
         # the local area were later or earlier than the mean
         E_L <- Int_long[Int_long$Area == input$area_select, 
                         "Intervention_type"] >= 
-            aggregate(Intervention_type~time, 
+            aggregate(time ~ Intervention_type, 
                       Int_long,FUN = mean)$Intervention_type
         Int_long$PlotCol = "black"
         Int_long$PlotCol[Int_long$Intervention_type >= 0] = "red"
