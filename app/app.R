@@ -43,8 +43,6 @@ options(shiny.sanitize.errors = TRUE)
 load(file = "./input_data/app_files.RDS")
 load(file = "./input_data/Trends_plots_list.RDS")
 
-#load(file = "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/app_files.RDS")
-#load(file = "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/Trends_plots_list.RDS")
 
 i18n <- Translator$new(translation_json_path='input_data/translation.json')
 i18n$set_translation_language('EN')
