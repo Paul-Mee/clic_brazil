@@ -64,6 +64,9 @@ load(fname)
 
 # Calculate total cases
 c_dat <- BigStandard$standardised_incidence
+
+c_dat <- BigStandard$standardised_incidence
+
 date_max <- max(c_dat$date_end)
 c_dat <- c_dat %>% dplyr::filter(c_dat$date_end==date_max)
 total <- sum(c_dat$cum_cases)
@@ -71,6 +74,26 @@ rm(c_dat)
 
 peakDF        <- readRDS(paste0(dir_peak_data,"Peak.rds"))
 all_plot_data <- readRDS(paste0(dir_Rt_data,"Brazil_rt_prediction-current.RDS"))
+
+
+# Subset of columns from Rt_data
+Rt_vars <- c("Date","city_state","Rt_Smooth","Rt_Smooth_LCI", "Rt_Smooth_UCI")
+all_plot_data <- all_plot_data[Rt_vars]
+
+
+# Covariates 
+load(paste0(dir_covariates,"Brazil_mun_covs.RData"))
+covar_dat <- SDI
+rm(SDI)
+covar_vars <-  c("Area_Name","popden", "SDI_index","Piped_water","Sewage_or_septic", "Travel_time" )
+covar_dat <- covar_dat[covar_vars]
+names(covar_dat)[1] <- "Area"
+names(covar_dat)[3] <- "sdi"
+names(covar_dat)[4] <- "piped_water"
+names(covar_dat)[5] <- "sewage_or_septic"
+names(covar_dat)[6] <- "travel_time"
+
+
 load(paste0(dir_peak_data,"AUCplot.rdata"))
 load(paste0(dir_peak_data,"AUCDF.rdata"))
 
@@ -88,7 +111,7 @@ peakDF <- peakDF[!is.na(peakDF$PredictProb), ]
 # make sf object
 peakSF <- st_as_sf(peakDF, coords = c("X", "Y"))
 
-# Load in pre-computed BigWrap dataset
+
 
 
 load(file.path(paste0(dir_app_data,"Trends_plots_test.RData")))
