@@ -4,7 +4,7 @@
 ## Paul Mee 11-May-2021
 ###
 
-##############
+###############
 ### Directory set up
 ### Update this with your local directories
 ##############
