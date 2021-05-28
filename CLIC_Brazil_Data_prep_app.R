@@ -56,7 +56,7 @@ if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.
 
 DateUntil <- Sys.Date()
 
-#cut_off_date = "2020-04-01"
+cut_off_date = "2020-04-01"
 
 # Read data
 fname <-  paste0(dir_data_objects,"Brazil_BigStandard_results.RData")
