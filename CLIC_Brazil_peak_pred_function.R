@@ -1,6 +1,6 @@
 
 # general work flow for git:
-# 0) "Pull" (blue arrow)
+# 0) CTRL-SHIFT-F1 to get to the "Environment" pane, then "Pull" (blue arrow)
 # 1) edit file
 # 2) save locally (as normal)
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
@@ -513,8 +513,23 @@ summary(AreaCoxphNull)
 
 table(is.na(AreaRecordDF$State))
 
-### test to remove rows where  DayYesterday = NA
+print("dim(AreaRecordDF) before:")
+print(dim(AreaRecordDF))
+
+print("### test to remove rows where  DayYesterday = NA")
 AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
+
+print("dim(AreaRecordDF) after:")
+print(dim(AreaRecordDF))
+
+# recalculate to make it same length as new DF
+CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
+                !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
+                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4) & !is.na(AreaRecordDF$GapToRecord5) & 
+                !is.na(AreaRecordDF$GapToRecord6) & !is.na(AreaRecordDF$GapToRecord7)
+
+print("length(CompleteSubset):")
+print(length(CompleteSubset))
 
 AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
                     as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
