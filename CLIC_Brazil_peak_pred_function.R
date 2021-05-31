@@ -39,6 +39,8 @@ require(data.table)
 require(survival)
 require(ROCR)
 require(plotROC)
+    
+require(coxme)
 
 source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
         
@@ -507,9 +509,15 @@ CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)  
                 !is.na(AreaRecordDF$GapToRecord6) & !is.na(AreaRecordDF$GapToRecord7)
 table(CompleteSubset)
 
-AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     1, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxphNull<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~
+                    (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxphNull)
+
+# stop("Fitted first random effect model.")
 
 table(is.na(AreaRecordDF$State))
 
@@ -531,16 +539,28 @@ CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)  
 print("length(CompleteSubset):")
 print(length(CompleteSubset))
 
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     as.factor(State), cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    as.factor(State) + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
 
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    popden + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     popden + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     popden, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    popden + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
 
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     SDI, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                    SDI + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
 
 # the following does not work for some reason
@@ -552,17 +572,23 @@ summary(AreaCoxph)
 #              data=AreaRecordDF))
 
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status)~ GapToRecord + frailty(Area),method="breslow", 
+#                  status)~ 1 + frailty(Area),method="breslow", 
 #                  data=AreaRecordDF, subset=CompleteSubset)
-# summary(AreaCoxph)
-
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 status)~ 1 + frailty(Area),method="breslow", 
-                 data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  status)~ 1, cluster(Area),method="breslow", 
+#                  data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 status) ~ (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
 
-AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
+# AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
+#                  data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  status)~ GapToRecord + GapToRecord2, cluster(Area), method="breslow", 
+#                  data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph2<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 status)~ GapToRecord + GapToRecord2 + (1|Area), 
                  data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph2)
 
@@ -579,15 +605,23 @@ anovaCox<-function(model1, model2){
 }
 anovaCox(AreaCoxph, AreaCoxph2)
 
-AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
-                 method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+print("First use of anovaCox().")
+
+# AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
+#                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+                 GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 +  (1|Area), 
+                 data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph7)
 anovaCox(AreaCoxph2, AreaCoxph7)
 
+# AreaCoxph167<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + frailty(Area),
+#                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 AreaCoxph167<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + frailty(Area),
-                 method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + (1|Area),
+                 data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph167)
 anovaCox(AreaCoxph167, AreaCoxph7)
 
@@ -627,28 +661,27 @@ anovaCox(AreaCoxph167, AreaCoxph7)
 AreaCoxphFormula<-AreaCoxph$formula
 AreaCoxphFormula
 
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord2 + as.factor(State) + SDI + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
+# comment out the following two because they seem to be overwritten immediately
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord2 + as.factor(State) + SDI + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+# summary(AreaCoxph)
+# 
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord2 + SDI + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+# summary(AreaCoxph)
+ 
+# re-do the following one with coxme
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + frailty(Area),
+#                  method="breslow", data=AreaRecordDF)
+AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + (1|Area), data=AreaRecordDF)
 summary(AreaCoxph)
-
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord2 + SDI + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
-summary(AreaCoxph)
-
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + frailty(Area),
-                 method="breslow", data=AreaRecordDF)
-summary(AreaCoxph)
-
 
 # make new dataset to predict 30 days ahead
 # pick out latest record for each municipality
-
-# View(AreaRecordDF)
-# View(AreaRecordDF[AreaRecordDF$Area=="São Caetano do Sul_SP", c("status", "DayYesterday", "Days_since_start", "standardised_casesYesterday", "standardised_casesDaily", "RecordAtStartOfDay", "GapToRecord")])
-# View(AreaRecordDF[AreaRecordDF$Area=="São Caetano do Sul_SP",])
 
 AreaRecordMaxDF<-aggregate(Days_since_start ~ Area, max, data=AreaRecordDF)
 # head(AreaRecordMaxDF)
@@ -764,9 +797,12 @@ AreaRecordTrainingDF<-AreaRecordTestTrainingDF[
 dim(AreaRecordTrainingDF)
 # AreaRecordTrainingDF[AreaRecordTrainingDF$Area=="São Caetano do Sul_SP",]
 
-AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
-                 method="breslow",
+# AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
+#                  method="breslow",
+#                  data=AreaRecordTrainingDF)
+AreaTrainingCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + (1|Area),
                  data=AreaRecordTrainingDF)
 
 # re-use the formula from above
