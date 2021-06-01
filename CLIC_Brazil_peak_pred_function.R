@@ -597,15 +597,22 @@ summary(AreaCoxph2)
 
 # https://stackoverflow.com/questions/58588833/why-do-i-get-an-error-in-anova-test-on-cox-models-in-r
 
-anovaCox<-function(model1, model2){
-   Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
-   Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
-   pval = pchisq(Chisq, Df, lower.tail=F)
-   print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
-}
-anovaCox(AreaCoxph, AreaCoxph2)
+# anovaCox<-function(model1, model2){
+#    Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
+#    Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
+#    pval = pchisq(Chisq, Df, lower.tail=F)
+#    print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+# }
+# anovaCox(AreaCoxph, AreaCoxph2)
+# print("First use of anovaCox().")
 
-print("First use of anovaCox().")
+# quit(save="ask")
+
+save.image(file = "C:\\Users\\eidenale\\Downloads\\debug.RData")
+
+anova(AreaCoxph, AreaCoxph2)
+print("First use of anova on coxme objects.")
+
 
 # AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
