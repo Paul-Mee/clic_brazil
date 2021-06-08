@@ -95,9 +95,12 @@ municipal_plot <- function(Brazil_cases_areas, plot_date) {
     g1
 }
 
+names_t <- unique(Brazil_cases_sp$Name[Brazil_cases_sp$Name != "Distrito Federal"])
+
 thematic::thematic_shiny()
 
 ui <- navbarPage(
+    windowTitle = app_title,
     
     theme=bs_theme(version=4,
                    bootswatch = "minty",
@@ -214,6 +217,18 @@ ui <- navbarPage(
                                          height="650px"),
                               br(),
                               htmlOutput("intervention_text"),
+                              br(),br(),
+                              p("The curved line on the plot shows the
+                                cumulative number of municipalities that 
+                                had implemented the particular intervention 
+                                in relation to the date that the first cases
+                                were detected in that municipality, points
+                                after day 0 are plotted in red. As can be seen
+                                most municipalities introduced the interventions 
+                                prior to the startof the local epidemic, based
+                                on national or state-level guidance. The 
+                                vertical dotted line represents the day of 
+                                implementation for the selected municipality."),
                               br(),br(),br()
                      )
                  )
@@ -228,10 +243,7 @@ ui <- navbarPage(
                      pickerInput("region_select2",
                                  label=i18n$t("Select National or a State"),
                                  choices = c("National",
-                                             sort(
-                                                 unique(
-                                                     as.character(
-                                                         Brazil_cases_sp$Name)))),
+                                             sort(names_t)),
                                  selected = "National",
                                  multiple = FALSE),
                      
@@ -1113,7 +1125,8 @@ server <- function(input, output, session) {
         print(head(out_dat(), n=input$maxrows), row.names = FALSE)
         options(orig)
     })
-    
+
+
     output$rawtable_rt <- renderPrint({
         orig <- options(width = 1000)
         print(head(data.table(all_plot_data), 
@@ -1123,10 +1136,32 @@ server <- function(input, output, session) {
     
     output$rawtable_covars <- renderPrint({
         orig <- options(width = 1000)
-        print(head(data.table(BigStandard$standardised_incidence), 
+        print(head(data.table(covar_dat), 
                    n=input$maxrows3), row.names = FALSE)
         options(orig)
     })
+    
+    output$downloadCsv <- downloadHandler(
+        filename = function() {
+            paste("data-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+            write.csv(out_dat(), file)
+        })
+    output$downloadCsv2 <- downloadHandler(
+        filename = function() {
+            paste("data-rt-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+            write.csv(all_plot_data, file)
+        })
+    output$downloadCsv3 <- downloadHandler(
+        filename = function() {
+            paste("data-covariates-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+            write.csv(BigStandard$standardised_incidence, file)
+        })
     
     output$text1 <- renderUI({
         HTML(i18n$t("The data on COVID-19 cases aggregated by municipality is obtained from the Brasil.IO COVID-19 project repository which is, updated on a daily basis. Municipality is the second administrative, level in Brazil (below state). There are 5,570 municipalities in, Brazil with an average of 37,728 inhabitants per municipality. This dataset contains confirmed COVID-19 cases and deaths obtained, from the bulletins of the State Health Secretariats across the country. obtained from this source and our application is updated daily, at 09:00 GMT. For more information see: <a href = 'https://brasil.io/dataset/covid19/caso_full/',> brasil.io </a></u>"))
@@ -1169,7 +1204,7 @@ server <- function(input, output, session) {
     })
     
     output$text11 <- renderUI({
-        HTML(i18n$t("This graph shows the time different interventions were announced relative to when the epidemic began in each municipality. The time origin (day 0) for each municipality is the first day on which a case incidence of greater than 1 case per 10,000 residents was reported. Each black dot represents one municipality with the red dots representing the municipality selected in the dropdown menu. Dots in the blue area represent municipalities where the intervention was announced before the local Covid-19 epidemic began while dots in the red area show municipalities where interventions were only announced after the outbreak had begun. The box plot summarises the median, interquartile range and range of timings for each municipality. The further right the red dot is on this plot the later in the epidemic interventions were announced compared to other areas. </u>"))
+        HTML(i18n$t("The curved line on the plot shows the cumulative number of municipalities that had implemented the particular intervention in relation to the date that the first cases were detected in that municipality, points after day 0 are plotted in red.  As can be seen most municipalities introduced the interventions prior to the startof the local epidemic, based on national or state-level guidance. The vertical dotted line represents the day of implementation for the selected municipality. </u>"))
     })
     
     output$text12 <- renderUI({
@@ -1177,7 +1212,83 @@ server <- function(input, output, session) {
     })
     
     output$text13 <- renderUI({
-        HTML(i18n$t("If you wish to carry out your own analyses on the standardised data you can download the full dataset in comma separated variable (csv) format from here. A description of the variables included is shown below. </br><b> area - </b> Municipality name and State (2 letter code). (NB UTF-8 encoding should be used to correctly format the place names) </br><b> date_end - </b> Date of data update (there is one row per municipality per day) </br><b> cum_cases - </b> Cumulative case count </br><b> cum_deaths - </b> Cumulative death count </br><b> bed_occ_2_5,bed_occ_50 & bed_occ_97_5 - </b> 2.5%, 50% & 97.5% credible intervals for the predicted number of hospital beds occupied by patients with COVID-19 based on the cumulative data </br><b> itu_bed_occ_2_5,itu_bed_occ_50 & itu_bed_occ_97_5 - </b> 2.5%, 50% & 97.5% credible intervals for the predicted number of Intensive care unit beds occupied by patients with COVID-19 based on the cumulative data. </br><b> standardised_cases - </b> Age standardised cumulative case incidence </br><b> statdardised_deaths - </b> Age standardised cumulative death incidence </br><b> stan_bed_occ_2_5,stan_bed_occ_50 & stan_bed_occ_97_5 - </b> 2.5% 50% & 97.5% credible intervals for the predicted number of hospital beds occupied by patients with COVID-19 based on the age standardised data. </br><b> stan_itu_bed_occ_2_5,stan_itu_bed_occ_50 & stan_itu_bed_occ_97_5 - </b> 2.5% 50% & 97.5% credible intervals for the predicted number of Intensive care unit beds occupied by patients with COVID-19 based on the age standardised data. </br><b> region - </b> State (2 letter code) </br><b> popden - </b> Population Density (individuals per km<sup>2</sup>) </br><b> sdi - </b> Social demogrpahic index for the mucipality (See Covariates in the 'About this site' - tab) </br><b> piped_water - </b> Proportion of population in the municipality with access to a piped water supply </br><b> sewage_or_septic - </b> Proportion of population in the municipality with access to sewage system or a septic tank </br><b> travel_time - </b> The land-based travel time between the most densely populated area in the municipality and the most densely populated area in the corresponding State </br><b> x - </b> The longitude of the municiplaity in decimal degrees </br><b> y - </b> The latitude of the municiplaity in decimal degrees </br><b> days_since_start - </b> The number of days since the age standardised incidene was greater than 1 case per 10,000 residents </br></br> The following variables are indicators which are coded 1 if the intervention described had been initiated by this date; </br><b> awareness_campaigns_start - </b> COVID-19 awareness campaigns </br><b> border_closure_start - </b> International border closures </br><b> domestic_travel_restrictions_start - </b> Domestic travel restrictions </br><b> economic_measures_start - </b> Economic interventions </br><b> border_health_screening_start - </b> Health screening at international borders </br><b> international_flight_suspension_start - </b> International flights suspended </br><b> isolation_quarrantine_start - </b>  Isolation and quarantine for those infected with COVID-19 </br><b> limit_on_public_gatherings_start -  </b> A limit was placed on public gatherings </br><b> schools_closure_start - </b>  School closures initiated </br><b> workplace_closure_start - </b>  Workplace closures initiated </u>"))
+        HTML(i18n$t("If you wish to carry out your own analyses on the standardised data you can download the full dataset in comma separated variable (csv) format from here. A description of the variables included is shown below. </br><b> Local area data </b> </br><b>Area - </b>Municipality name and State (2 letter code). (NB UTF-8 encoding
+should be used to correctly format the place names) <br>
+<span class=SpellE><b>date_end</b></span><b> - </b>Date of data update (there
+is one row per municipality per day) <br>
+<span class=SpellE><b>cum_cases</b></span><b> - </b>Cumulative case count <br>
+<span class=SpellE><b>cum_deaths</b></span><b> - </b>Cumulative death count <br>
+<span class=SpellE><b>standardised_cases</b></span><b> - </b>Age standardised
+cumulative case incidence <br>
+<span class=SpellE><b>standardised_deaths</b></span><b> - </b>Age standardised
+cumulative death incidence <br>
+<b>Region - </b>State (2 letter code) <b><o:p></o:p></b></p>
+<p class=MsoNormal style='margin-bottom:0cm'><b>X - </b>The longitude of the <span
+class=SpellE>municiplaity</span> in decimal degrees <br>
+<b>Y - </b>The latitude of the <span class=SpellE>municiplaity</span> in
+decimal degrees <br>
+<span class=SpellE><b>days_since_start</b></span><b> - </b>The number of days
+since the age standardised incidence was greater than 1 case per 10,000
+residents</p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>emergency_declared_start</b></span><b>
+ñ </b>Number of days from first record to an emergency being declared in the <span
+class=GramE>municipality</span></p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>industry_retail_service_restrictions_start</b></span>
+- Number of days from first record to industry or retail service restrictions
+being declared in the <span class=GramE>municipality</span></p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>transport_restrictions_start</b></span>
+- Number of days from first record to transport restrictions being declared in
+the <span class=GramE>municipality</span></p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>school_closure_start</b></span>
+- Number of days from first record to school <span class=GramE>closures<span
+style='mso-spacerun:yes'>† </span>being</span> initiated in the municipality</p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><b>Rt data<o:p></o:p></b></p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=GramE><b>Date</b> <span
+style='mso-spacerun:yes'></span>-</span> Date of the Rt estimation </p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>city_state</b></span>
+- Municipality name and State (2 letter code). (NB UTF-8 encoding should be
+used to correctly format the place names) - (equivalent to area variable in the
+other two files)</p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>Rt_Smooth</b></span>
+- Rt Estimation for that date</p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>Rt_Smooth_LCI</b></span>
+- Lower 95% Confidence interval for the Rt estimation</p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=SpellE><b>Rt_Smooth_UCI</b></span>
+- Upper 95% Confidence interval for the Rt estimation</p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal style='margin-bottom:0cm'><span class=GramE><b>Covariates</b></span><b>
+data</b> </p>
+<p class=MsoNormal style='margin-bottom:0cm'><b>Area </b>- Municipality name
+and State (2 letter code). (NB UTF-8 encoding should be used to correctly
+format the place names)<br>
+<span class=SpellE><b>popden</b></span><b> - </b>Population Density
+(individuals per km<sup>2</sup>) <br>
+<span class=SpellE><b>sdi</b></span><b> - </b>Social <span class=SpellE>demogrpahic</span>
+index for the <span class=SpellE>mucipality</span> (See Covariates in the
+'About this site' - tab) <br>
+<span class=SpellE><b>piped_water</b></span><b> - </b>Proportion of population
+in the municipality with access to a piped water supply <br>
+<span class=SpellE><b>sewage_or_septic</b></span><b> - </b>Proportion of
+population in the municipality with access to sewage system or a septic tank <br>
+<span class=SpellE><b>travel_time</b></span><b> - </b>The land-based travel
+time between the most densely populated area in the municipality and the most
+densely populated area in the corresponding State <br>
+restrictions being declared in the municipality<b><o:p></o:p></b></p>
+ </u>"))
     })
     
     output$text14 <- renderUI({
@@ -1388,8 +1499,8 @@ server <- function(input, output, session) {
     output$boxplot <- renderImage({
         
         return(list(
-            src = "input_data/boxplot.jpg",
-            contentType = "image/jpg",
+            src = "input_data/lineplot.png",
+            contentType = "image/png",
             alt = "Image",
             width = "50%", height = "250"
         ))  
@@ -1401,7 +1512,7 @@ server <- function(input, output, session) {
             src = "input_data/trends.jpg",
             contentType = "image/jpg",
             alt = "Image",
-            width = "50%", height = "250"
+            width = "50%", height = "450"
         ))  
     }, deleteFile = FALSE)
     
