@@ -18,7 +18,7 @@ dir_data_objects <- "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/"
 epi_filter_file_sources <- "C:/github/clic_brazil/epifilter/R files/main/"
 dir_Rt_data <-  "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/"
 dir_peak_data <- "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/"
-dir_app_data <- "C:/CADDE_dropbox/Dropbox/COVID_cities/input_data/"
+dir_app_data <- "C:/CADDE_dropbox/Dropbox/COVID_cities/lacpt/input_data/"
 dir_geo_data <-  "C:/github/clic_brazil/geo_data/"
 dir_results <-  "C:/github/data/results/"
 
