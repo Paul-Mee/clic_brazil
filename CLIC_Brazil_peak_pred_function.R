@@ -17,9 +17,9 @@
 
 # based on "PM_peak_batch_v2 alpha-test.R"
 
- AUCfn <-function(FolderName){
-
-
+ AUCfn <-function(FolderName, TestNE=F){
+    
+    # use TestNE=T to have a smaller subset of the data (NE region) for the Cox models
 
 # https://stackoverflow.com/questions/47932246/rscript-detect-if-r-script-is-being-called-sourced-from-another-script
 
@@ -517,7 +517,7 @@ AreaCoxphNull<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
                     (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxphNull)
 
-# stop("Fitted first random effect model.")
+print("Fitted first random effect model.")
 
 table(is.na(AreaRecordDF$State))
 
@@ -539,29 +539,39 @@ CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)  
 print("length(CompleteSubset):")
 print(length(CompleteSubset))
 
+if(TestNE){
+   print("table(CompleteSubset):")
+   print(table(CompleteSubset))
+   print("Subsetting to NE region for testing purposes...")
+   CompleteSubset<-CompleteSubset & 
+      AreaRecordDF$State %in% c("AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE")
+   print("table(CompleteSubset):")
+   print(table(CompleteSubset))
+}
+
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     as.factor(State), cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    as.factor(State) + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     as.factor(State) + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# summary(AreaCoxph)
 
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     popden + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     popden, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    popden + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     popden + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# summary(AreaCoxph)
 
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     SDI, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                    SDI + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     SDI + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# summary(AreaCoxph)
 
 # the following does not work for some reason
 # anova(AreaCoxphNull, AreaCoxph)
@@ -608,10 +618,23 @@ summary(AreaCoxph2)
 
 # quit(save="ask")
 
-save.image(file = "C:\\Users\\eidenale\\Downloads\\debug.RData")
+if(Sys.info()[['user']]=="eidenale"){
+   # https://stackoverflow.com/questions/49013427/r-saving-image-within-function-is-not-loading
+   # save.image(file = "C:\\Users\\eidenale\\Downloads\\debug.RData")
+   save(
+      list = ls(all.names = TRUE), 
+      file = "C:\\Users\\eidenale\\Downloads\\debug.RData", 
+      envir =  environment())
+}
+# load("C:\\Users\\eidenale\\Downloads\\debug.RData")
+
+print("summary(AreaCoxph):")
+print(summary(AreaCoxph))
+print("summary(AreaCoxph2):")
+print(summary(AreaCoxph2))
 
 anova(AreaCoxph, AreaCoxph2)
-print("First use of anova on coxme objects.")
+print("First use of anova on coxme objects has been done.")
 
 
 # AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),

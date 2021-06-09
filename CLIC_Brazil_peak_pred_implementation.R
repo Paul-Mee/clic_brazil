@@ -24,7 +24,10 @@ source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))
 ## arg1 = directory where Big Standard file is stored
 ####
 
-AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects)
+# AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects)
+
+TestingScalar<-FALSE # whether to use the testing option (subset of data in NE region)
+AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects, TestNE=TestingScalar)
 
 #### Output
 
