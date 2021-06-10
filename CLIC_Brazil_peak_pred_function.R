@@ -625,13 +625,18 @@ if(Sys.info()[['user']]=="eidenale"){
       list = ls(all.names = TRUE), 
       file = "C:\\Users\\eidenale\\Downloads\\debug.RData", 
       envir =  environment())
+   # load("C:\\Users\\eidenale\\Downloads\\debug.RData")
 }
-# load("C:\\Users\\eidenale\\Downloads\\debug.RData")
 
 print("summary(AreaCoxph):")
 print(summary(AreaCoxph))
 print("summary(AreaCoxph2):")
 print(summary(AreaCoxph2))
+
+# https://stackoverflow.com/questions/19226816/how-can-i-view-the-source-code-for-a-function
+# methods(anova)
+# getAnywhere(anova.coxme)
+# getAnywhere(anova.coxmelist)
 
 anova(AreaCoxph, AreaCoxph2)
 print("First use of anova on coxme objects has been done.")
