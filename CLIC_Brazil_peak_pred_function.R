@@ -637,6 +637,18 @@ print(summary(AreaCoxph2))
 # methods(anova)
 # getAnywhere(anova.coxme)
 # getAnywhere(anova.coxmelist)
+# require(coxme)
+
+# https://www.python2.net/questions-175391.htm
+
+Df = sum(anova(AreaCoxph2)$Df, na.rm = T) - sum(anova(AreaCoxph)$Df, na.rm = T)
+Chisq = abs(as.numeric(logLik(AreaCoxph2) - logLik(AreaCoxph)) * 2)
+pval = pchisq(Chisq, Df, lower.tail=F)
+
+# from coxme manual:
+# "The likelihood for a mixed effects Cox model can be viewed in two ways: the ordinarly partial
+# likelihood, where the random effects act only as a penalty or constraint, or a partial likelihood
+# where the random effect has been integrated out. Both are valid."
 
 anova(AreaCoxph, AreaCoxph2)
 print("First use of anova on coxme objects has been done.")
