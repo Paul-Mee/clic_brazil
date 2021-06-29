@@ -616,6 +616,36 @@ summary(AreaCoxph2)
 # anovaCox(AreaCoxph, AreaCoxph2)
 # print("First use of anovaCox().")
 
+anovaCox<-function(model1, model2){
+   if(  "coxme" %in% class(model1) &   "coxme" %in% class(model2)){
+      # coxme models
+      # from coxme manual:
+      # "The likelihood for a mixed effects Cox model can be viewed in two ways: the ordinarly partial
+      # likelihood, where the random effects act only as a penalty or constraint, or a partial likelihood
+      # where the random effect has been integrated out. Both are valid."
+      #
+      # opt for "Integrated" likelihood because the DF are easier to understand
+      logLik1<-model2$loglik["Integrated"]
+      logLik2<-model1$loglik["Integrated"]
+      Chisq = abs(as.numeric(logLik2 - logLik1) * 2)
+      
+      Df = model2$df[1] - model1$df[1]
+      pval = pchisq(Chisq, Df, lower.tail=F)
+      print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+   }else{
+   if(! "coxme" %in% class(model1) & ! "coxme" %in% class(model2)){
+      # assume they are usual cox models
+      Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
+      Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
+      pval = pchisq(Chisq, Df, lower.tail=F)
+      print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+   }else{
+      stop("Models of different classes have been passed to the anovaCox function.")
+   }
+   }
+}
+
+
 # quit(save="ask")
 
 if(Sys.info()[['user']]=="eidenale"){
@@ -632,6 +662,7 @@ print("summary(AreaCoxph):")
 print(summary(AreaCoxph))
 print("summary(AreaCoxph2):")
 print(summary(AreaCoxph2))
+# class(summary(AreaCoxph2))
 
 # https://stackoverflow.com/questions/19226816/how-can-i-view-the-source-code-for-a-function
 # methods(anova)
@@ -641,16 +672,8 @@ print(summary(AreaCoxph2))
 
 # https://www.python2.net/questions-175391.htm
 
-Df = sum(anova(AreaCoxph2)$Df, na.rm = T) - sum(anova(AreaCoxph)$Df, na.rm = T)
-Chisq = abs(as.numeric(logLik(AreaCoxph2) - logLik(AreaCoxph)) * 2)
-pval = pchisq(Chisq, Df, lower.tail=F)
-
-# from coxme manual:
-# "The likelihood for a mixed effects Cox model can be viewed in two ways: the ordinarly partial
-# likelihood, where the random effects act only as a penalty or constraint, or a partial likelihood
-# where the random effect has been integrated out. Both are valid."
-
-anova(AreaCoxph, AreaCoxph2)
+# anova(AreaCoxph, AreaCoxph2)
+anovaCox(AreaCoxph, AreaCoxph2)
 print("First use of anova on coxme objects has been done.")
 
 
