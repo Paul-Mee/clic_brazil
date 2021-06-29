@@ -674,13 +674,13 @@ print(summary(AreaCoxph2))
 
 # anova(AreaCoxph, AreaCoxph2)
 anovaCox(AreaCoxph, AreaCoxph2)
-print("First use of anova on coxme objects has been done.")
+print("First use of anovaCox on coxme objects has been done.")
 
 
 # AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
 #                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+AreaCoxph7<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
                  GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 +  (1|Area), 
                  data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph7)
@@ -689,7 +689,7 @@ anovaCox(AreaCoxph2, AreaCoxph7)
 # AreaCoxph167<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + frailty(Area),
 #                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph167<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+AreaCoxph167<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + (1|Area),
                  data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph167)
