@@ -511,13 +511,17 @@ table(CompleteSubset)
 
 # AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     1, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxphNull<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~
-                    (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+
+AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~
+                    1, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+print("Fitted first cluster model.")
+
+# AreaCoxphNull<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~
+#                     (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# print("Fitted first random effect model.")
+
 summary(AreaCoxphNull)
 
-print("Fitted first random effect model.")
 
 table(is.na(AreaRecordDF$State))
 
@@ -584,22 +588,23 @@ if(TestNE){
 # AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  status)~ 1 + frailty(Area),method="breslow", 
 #                  data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status)~ 1, cluster(Area),method="breslow", 
-#                  data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 status) ~ (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+
+AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 status)~ 1, cluster(Area),method="breslow",
+                 data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  status) ~ (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
 
 # AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
 #                  data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status)~ GapToRecord + GapToRecord2, cluster(Area), method="breslow", 
-#                  data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph2<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 status)~ GapToRecord + GapToRecord2 + (1|Area), 
+AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 status)~ GapToRecord + GapToRecord2, cluster(Area), method="breslow",
                  data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph2<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  status)~ GapToRecord + GapToRecord2 + (1|Area), 
+#                  data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph2)
 
 # anova(AreaCoxph2, AreaCoxph)
@@ -616,7 +621,7 @@ summary(AreaCoxph2)
 # anovaCox(AreaCoxph, AreaCoxph2)
 # print("First use of anovaCox().")
 
-anovaCox<-function(model1, model2){
+anovaCox<-function(model1, model2, Wald=F){
    if(  "coxme" %in% class(model1) &   "coxme" %in% class(model2)){
       # coxme models
       # from coxme manual:
@@ -635,10 +640,17 @@ anovaCox<-function(model1, model2){
    }else{
    if(! "coxme" %in% class(model1) & ! "coxme" %in% class(model2)){
       # assume they are usual cox models
-      Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
-      Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
-      pval = pchisq(Chisq, Df, lower.tail=F)
-      print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+      if(Wald){
+         Df    = abs(summary(model2)$waldtest["df"]   - summary(model1)$waldtest["df"])
+         Chisq = abs(summary(model2)$waldtest["test"] - summary(model1)$waldtest["test"])
+         pval = pchisq(Chisq, Df, lower.tail=F)
+         print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+      }else{
+         Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
+         Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
+         pval = pchisq(Chisq, Df, lower.tail=F)
+         print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+      }
    }else{
       stop("Models of different classes have been passed to the anovaCox function.")
    }
@@ -660,6 +672,7 @@ if(Sys.info()[['user']]=="eidenale"){
 
 print("summary(AreaCoxph):")
 print(summary(AreaCoxph))
+# AreaCoxph$loglik
 print("summary(AreaCoxph2):")
 print(summary(AreaCoxph2))
 # class(summary(AreaCoxph2))
@@ -673,8 +686,9 @@ print(summary(AreaCoxph2))
 # https://www.python2.net/questions-175391.htm
 
 # anova(AreaCoxph, AreaCoxph2)
-anovaCox(AreaCoxph, AreaCoxph2)
-print("First use of anovaCox on coxme objects has been done.")
+anovaCox(AreaCoxph, AreaCoxph2, Wald=T)
+# print("First use of anovaCox on coxme objects has been done.")
+print("First use of anovaCox has been done.")
 
 
 # AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
