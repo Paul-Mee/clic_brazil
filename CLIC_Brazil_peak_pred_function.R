@@ -13,6 +13,24 @@
 # then run "CLIC_Brazil_peak_pred_implementation.R" which is a wrapper for the current file
 
 
+StripLastPartialWeek<-function(x){
+   # assumes 0 is first day etc
+   # will strip the last week from the data if it is incomplete
+   RatioMod<-x %/% 7
+   Ratio   <-x  /  7
+   MaxRatioMod<-max(RatioMod)
+   MaxRatio   <-max(Ratio)
+   print(round(MaxRatio-MaxRatioMod, 3))
+   RemoveLastWeek<-!(round(MaxRatio-MaxRatioMod, 3)==round(6/7, 3))
+   if(RemoveLastWeek){xTruncated<-x[RatioMod<MaxRatioMod]}else{xTruncated<-x}
+   # test<-x-(Max+1)<I(-1)
+   return(xTruncated)
+}
+
+StripLastPartialWeek(0:6)
+StripLastPartialWeek(0:7)
+
+
 # function to help calculate AUC for different datasets
 
 # based on "PM_peak_batch_v2 alpha-test.R"
@@ -1091,7 +1109,8 @@ return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
 
  
  
-AUCfn <-function(FolderName, dir_scripts=dir_scripts, dir_data_objects=dir_data_objects){
+AUCfn <-function(FolderName, dir_script=dir_scripts, dir_data=dir_data_objects, dir_covar=dir_covariates, 
+                 TestNE=F){
 
 require(data.table)
 require(survival)
@@ -1100,9 +1119,9 @@ require(plotROC)
     
 require(coxme)
 
-source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
+source(paste0(dir_script,"CLIC_Brazil_standardisation_functions.R"))
 
-fname <-  paste0(dir_data_objects,"Brazil_BigStandard_results.RData")
+fname <-  paste0(dir_data,"Brazil_BigStandard_results.RData")
 print(fname)
     
 load(fname)
@@ -1114,7 +1133,7 @@ load(fname)
 c_dat = as.data.table(re.route.origin(BigStandard$standardised_incidence))
 
 # Get covariates data 
-load(paste0(dir_covariates,"Brazil_mun_covs.RData"))
+load(paste0(dir_covar,"Brazil_mun_covs.RData"))
 names(SDI)[names(SDI) == 'Area_Name'] <- 'Area'
 names(SDI)[names(SDI) == 'SDI_index'] <- 'SDI'
 SDI <- as.data.table(SDI)
@@ -1219,18 +1238,19 @@ AreaProfilesDF<-merge(
    x=AreaProfilesDF, y=AreaProfilesDailyDF, 
    by=c("Area", "Days_since_start"), all.x=T, all.y=T)
 dim(AreaProfilesDF)
-names(AreaProfilesDF)
+print(names(AreaProfilesDF))
 AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
 # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
+print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
 
-SubsetVector<-AreaProfilesDF$Area %in% as.character(AreaProfilesLatestDayDF[1:10, "Area"])
-table(SubsetVector)
+# StripLastPartialWeek
+
+}
+
+junk<-function(){
+# SubsetVector<-AreaProfilesDF$Area %in% as.character(AreaProfilesLatestDayDF[1:10, "Area"])
+# table(SubsetVector)
 # head(AreaProfilesDF[SubsetVector, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
-
-# set the index manually to see one area at a time
-   # ggplot(AreaProfilesDF[AreaProfilesDF$Area %in% as.character(AreaProfilesLatestDayDF[8, "Area"]),], 
-   #    aes(x = Days_since_start, y = log10(standardised_casesDaily), group = Area))  + 
-   #    geom_line(aes(color=rank(Area)))
 
 # how many have more days that the chosen test municipality
 table(AreaProfilesLatestDayDF$Days_since_start>max(AreaProfilesSubsetDF$Days_since_start))
