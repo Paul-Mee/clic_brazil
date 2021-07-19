@@ -20,15 +20,27 @@ StripLastPartialWeek<-function(x){
    Ratio   <-x  /  7
    MaxRatioMod<-max(RatioMod)
    MaxRatio   <-max(Ratio)
-   print(round(MaxRatio-MaxRatioMod, 3))
+   # print(unlist(list(MaxRatioMod=MaxRatioMod, MaxRatio=MaxRatio)))
+   #round(MaxRatio-MaxRatioMod, 3))
    RemoveLastWeek<-!(round(MaxRatio-MaxRatioMod, 3)==round(6/7, 3))
-   if(RemoveLastWeek){xTruncated<-x[RatioMod<MaxRatioMod]}else{xTruncated<-x}
+   if(RemoveLastWeek){
+      xTruncated   <-       x[RatioMod<MaxRatioMod]
+      WeekTruncated<-RatioMod[RatioMod<MaxRatioMod]
+   }else{
+      xTruncated   <-x
+      WeekTruncated<-RatioMod
+   }
    # test<-x-(Max+1)<I(-1)
-   return(xTruncated)
+   return(list(DayTruncated=xTruncated, WeekTruncated=WeekTruncated))
 }
 
 StripLastPartialWeek(0:6)
 StripLastPartialWeek(0:7)
+StripLastPartialWeek(0:13)
+StripLastPartialWeek(0:14)
+
+StripLastPartialWeek(0:14)$DayTruncated
+StripLastPartialWeek(0:14)$WeekTruncated
 
 
 # function to help calculate AUC for different datasets
@@ -1215,17 +1227,40 @@ AreaProfilesDailyDF<-data.frame(
       stringsAsFactors=FALSE)
 
 # calculate new cases by day, by differencing the cumulative cases
-for(i in 1:length(AreaVector)){
-# for(i in 1:10){
-   # print(i)
+# for(i in 1:length(AreaVector)){
+for(i in 1:10){
+   print(unlist(list(Area=i)))
    AreaProfilesDailysubsetDF<-AreaProfilesDF[
       AreaProfilesDF$Area==AreaVector[i], 
       c("Area", "Days_since_start", "standardised_cases")]
+   AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
    AreaProfilesDailysubsetDF$standardised_casesDaily<-c(0, diff(AreaProfilesDailysubsetDF$standardised_cases))
-   # print(head(AreaProfilesDailysubsetDF))
-   AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
-   # print(dim(AreaProfilesDailyDF))
-   }
+   
+   if(nrow(AreaProfilesDailysubsetDF)>0){
+      # print(head(AreaProfilesDailysubsetDF))
+      StripLastPartialWeekObj<-StripLastPartialWeek(AreaProfilesDailysubsetDF$Days_since_start)
+      Days_since_startWeekTruncated<-StripLastPartialWeekObj$WeekTruncated
+      Days_since_startDayTruncated <-StripLastPartialWeekObj$DayTruncated
+      # print(dim(AreaProfilesDailysubsetDF))
+      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[
+         AreaProfilesDailysubsetDF$Days_since_start %in% Days_since_startDayTruncated,]
+      # print(dim(AreaProfilesDailysubsetDF))
+      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
+      AreaProfilesDailysubsetDF$Weeks_since_start<-Days_since_startWeekTruncated
+      # print(AreaProfilesDailysubsetDF)
+     
+      AreaProfilesWeeklysubsetDF<-as.data.frame(tapply(
+         AreaProfilesDailysubsetDF$standardised_casesDaily, 
+         AreaProfilesDailysubsetDF$Weeks_since_start, 
+         sum))
+     
+      names(AreaProfilesWeeklysubsetDF)<-"standardised_casesWeekly"
+      AreaProfilesWeeklysubsetDF$Week<-rownames(AreaProfilesWeeklysubsetDF)
+      print(head(AreaProfilesWeeklysubsetDF))
+   } 
+   # AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
+   
+}
 
 AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
 # head(AreaProfilesDailyDF)
@@ -1236,14 +1271,13 @@ dim(AreaProfilesDF)
 names(AreaProfilesDF)
 AreaProfilesDF<-merge(
    x=AreaProfilesDF, y=AreaProfilesDailyDF, 
-   by=c("Area", "Days_since_start"), all.x=T, all.y=T)
+   by=c("Area", "Days_since_start"), all.x=F, all.y=T)
 dim(AreaProfilesDF)
 print(names(AreaProfilesDF))
 AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
 # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
 print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
 
-# StripLastPartialWeek
 
 }
 

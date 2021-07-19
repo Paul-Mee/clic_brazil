@@ -26,7 +26,7 @@ source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))
 
 # AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects)
 
-TestingScalar<-FALSE # whether to use the testing option (subset of data in NE region)
+TestingScalar<-TRUE # whether to use the testing option (subset of data in NE region)
 AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects, TestNE=TestingScalar)
 
 #### Output
