@@ -43,6 +43,46 @@ StripLastPartialWeek(0:14)$DayTruncated
 StripLastPartialWeek(0:14)$WeekTruncated
 
 
+# https://stats.stackexchange.com/questions/22974/how-to-find-local-peaks-valleys-in-a-series-of-data
+find_peaks <- function (x, m = 1){
+    shape <- diff(sign(diff(x, na.pad = FALSE)))
+    pks <- sapply(which(shape < 0), FUN = function(i){
+       z <- i - m + 1
+       z <- ifelse(z > 0, z, 1)
+       w <- i + m + 1
+       w <- ifelse(w < length(x), w, length(x))
+       if(all(x[c(z : i, (i + 2) : w)] <= x[i + 1])) return(i + 1) else return(numeric(0))
+    })
+     pks <- unlist(pks)
+     pks
+}
+find_peaks(c(0, 1, 2, 3, 2, 1, 0))
+find_peaks(c(0, 1, 2, 3, 3, 2, 1, 0))
+find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 0))
+
+# what happens if the first value is higher than the second
+find_peaks(c(1, 0, 1, 2, 3, 3, 3, 2, 1, 0))
+# ...not defined as a peak
+
+# ...and if the last is the highest...
+find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 4))
+# ...not defined as a peak either
+
+# https://stackoverflow.com/questions/7735647/replacing-nas-with-latest-non-na-value
+repeat.before = function(x) {   # repeats the last non NA value. Keeps leading NA
+    ind = which(!is.na(x))      # get positions of nonmissing values
+    if(is.na(x[1]))             # if it begins with a missing, add the 
+          ind = c(1,ind)        # first position to the indices
+    rep(x[ind], times = diff(   # repeat the values at these indices
+       c(ind, length(x) + 1) )) # diffing the indices + length yields how often 
+}                               # they need to be repeated
+
+
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+
 # function to help calculate AUC for different datasets
 
 # based on "PM_peak_batch_v2 alpha-test.R"
@@ -1219,11 +1259,17 @@ head(AreaProfilesDF[,c("Area", "Days_since_start")])
 AreaVector<-as.character(sort(unique(AreaProfilesDF$Area)))
 length(AreaVector)
 
-AreaProfilesDailyDF<-data.frame(
+# AreaProfilesDailyDF<-data.frame(
+#    Area=character(),
+#    Days_since_start=integer(), 
+#    standardised_cases=double(),
+#    standardised_casesDaily=double(),
+#       stringsAsFactors=FALSE)
+
+AreaProfilesWeeklyDF<-data.frame(
    Area=character(),
-   Days_since_start=integer(), 
-   standardised_cases=double(),
-   standardised_casesDaily=double(),
+   Weeks_since_start=integer(), 
+   standardised_casesWeekly=double(),
       stringsAsFactors=FALSE)
 
 # calculate new cases by day, by differencing the cumulative cases
@@ -1255,156 +1301,61 @@ for(i in 1:10){
          sum))
      
       names(AreaProfilesWeeklysubsetDF)<-"standardised_casesWeekly"
-      AreaProfilesWeeklysubsetDF$Week<-rownames(AreaProfilesWeeklysubsetDF)
+      AreaProfilesWeeklysubsetDF$Weeks_since_start<-rownames(AreaProfilesWeeklysubsetDF)
+      AreaProfilesWeeklysubsetDF$Area             <-AreaVector[i]
       print(head(AreaProfilesWeeklysubsetDF))
    } 
    # AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
+   AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
    
 }
 
-AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
-# head(AreaProfilesDailyDF)
-# View(AreaProfilesDailyDF)
+# AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
 
-# merge back
-dim(AreaProfilesDF)
-names(AreaProfilesDF)
-AreaProfilesDF<-merge(
-   x=AreaProfilesDF, y=AreaProfilesDailyDF, 
-   by=c("Area", "Days_since_start"), all.x=F, all.y=T)
-dim(AreaProfilesDF)
-print(names(AreaProfilesDF))
-AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
-# View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
-print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
-
-
-}
-
-junk<-function(){
-# SubsetVector<-AreaProfilesDF$Area %in% as.character(AreaProfilesLatestDayDF[1:10, "Area"])
-# table(SubsetVector)
-# head(AreaProfilesDF[SubsetVector, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
-
-# how many have more days that the chosen test municipality
-table(AreaProfilesLatestDayDF$Days_since_start>max(AreaProfilesSubsetDF$Days_since_start))
-table(AreaProfilesLatestDayDF$Days_since_start>max(AreaProfilesSubsetDF$Days_since_start)+14)
-
-# https://stats.stackexchange.com/questions/22974/how-to-find-local-peaks-valleys-in-a-series-of-data
-find_peaks <- function (x, m = 1){
-    shape <- diff(sign(diff(x, na.pad = FALSE)))
-    pks <- sapply(which(shape < 0), FUN = function(i){
-       z <- i - m + 1
-       z <- ifelse(z > 0, z, 1)
-       w <- i + m + 1
-       w <- ifelse(w < length(x), w, length(x))
-       if(all(x[c(z : i, (i + 2) : w)] <= x[i + 1])) return(i + 1) else return(numeric(0))
-    })
-     pks <- unlist(pks)
-     pks
-}
-find_peaks(c(0, 1, 2, 3, 2, 1, 0))
-find_peaks(c(0, 1, 2, 3, 3, 2, 1, 0))
-find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 0))
-
-# what happens if the first value is higher than the second
-find_peaks(c(1, 0, 1, 2, 3, 3, 3, 2, 1, 0))
-# ...not defined as a peak
-
-# ...and if the last is the highest...
-find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 4))
-# ...not defined as a peak either
-
-# https://stackoverflow.com/questions/7735647/replacing-nas-with-latest-non-na-value
-repeat.before = function(x) {   # repeats the last non NA value. Keeps leading NA
-    ind = which(!is.na(x))      # get positions of nonmissing values
-    if(is.na(x[1]))             # if it begins with a missing, add the 
-          ind = c(1,ind)        # first position to the indices
-    rep(x[ind], times = diff(   # repeat the values at these indices
-       c(ind, length(x) + 1) )) # diffing the indices + length yields how often 
-}                               # they need to be repeated
-
-
-
-#plot(x=AreaProfilesSubsetDF$Days_since_start, y=AreaProfilesSubsetDF$standardised_casesDaily, type="l")
-peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesDaily)
-
-#AreaProfilesSCDF<-AreaProfilesDF[AreaProfilesDF$Area=="São Caetano do Sul_SP",]
-#AreaProfilesSCDF<-AreaProfilesSCDF[order(as.numeric(AreaProfilesSCDF$Days_since_start)),]
-# plot(x=AreaProfilesSCDF$Days_since_start, 
-#      y=AreaProfilesSCDF$standardised_casesDaily, type="l")
-
-#peaksVector<-find_peaks(AreaProfilesSCDF$standardised_casesDaily)
-# points(x=AreaProfilesSCDF$Days_since_start[peaksVector], 
-#        y=AreaProfilesSCDF$standardised_casesDaily[peaksVector], col="red")
-
-#AreaProfilesSCPeakDF<-AreaProfilesSCDF[peaksVector,c("Days_since_start", "standardised_casesDaily")]
-#AreaProfilesSCPeakDF$diff<-c(999, diff(AreaProfilesSCPeakDF$standardised_casesDaily))
-
-# pick out new records
-#while(any(AreaProfilesSCPeakDF$diff<0)){
-#   AreaProfilesSCPeakDF<-AreaProfilesSCPeakDF[AreaProfilesSCPeakDF$diff>=0,]
-#   AreaProfilesSCPeakDF$diff<-c(999, diff(AreaProfilesSCPeakDF$standardised_casesDaily))
-#}
-#AreaProfilesSCPeakDF$peak<-T
-#AreaProfilesSCPeakDF
-
-# points(x=AreaProfilesSCPeakDF$Days_since_start, 
-#        y=AreaProfilesSCPeakDF$standardised_casesDaily, col="blue", pch=2)
-
-
-#AreaProfilesSCDF<-merge(
- #  x=AreaProfilesSCDF, 
- #  y=AreaProfilesSCPeakDF[,c("Days_since_start", "peak")], 
-  # by="Days_since_start", all.x=T, all.y=F)
-
-# View(AreaProfilesSCDF)
-# AreaProfilesSCDF[,c("Days_since_start", "standardised_cases", "standardised_casesDaily", "peak")]
-
-#AreaProfilesSCDF$CurrentRecord<-ifelse(
-  # AreaProfilesSCDF$peak, 
-  # AreaProfilesSCDF$standardised_casesDaily, NA
-  # )
-
-#AreaProfilesSCDF$RecordAtStartOfDay<-repeat.before(AreaProfilesSCDF$CurrentRecord)
-#AreaProfilesSCDF$RecordAtStartOfDay<-c(
- #  NA, 
- #  AreaProfilesSCDF$RecordAtStartOfDay[1:I(length(AreaProfilesSCDF$RecordAtStartOfDay)-1)]
-  # )
+# don't modify or run the following; means that the main DF to work with should be AreaProfilesWeeklyDF
 #
-#AreaProfilesSCDF$standardised_casesYesterday<-c(
-  # NA, 
- #  AreaProfilesSCDF$standardised_casesDaily[1:I(length(AreaProfilesSCDF$standardised_casesDaily)-1)]
-  # )
+# # merge back
+#   dim(AreaProfilesDF)
+# names(AreaProfilesDF)
+# AreaProfilesDF<-merge(
+#    x=AreaProfilesDF, y=AreaProfilesWeeklyDF, 
+#    by=c("Area", "Days_since_start"), all.x=F, all.y=T)
+# dim(AreaProfilesDF)
+# print(names(AreaProfilesDF))
+# AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
+# # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
+# print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
 
-#AreaProfilesSCDF[,c("Days_since_start", "standardised_casesDaily", "standardised_casesYesterday", "peak", "RecordAtStartOfDay")]
 
-substrRight <- function(x, n){
-  substr(x, nchar(x)-n+1, nchar(x))
 }
 
-# head(substrRight(AreaProfilesDF$Area, 2))
-# View(AreaProfilesDF[substrRight(as.character(AreaProfilesDF$Area), 2)=="SP",])
 
-# São Caetano do Sul_SP
-
-
-#rm(AreaProfilesSCDF)
+# peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesDaily)
 
 # https://stats.stackexchange.com/questions/353692/modelling-recurrent-events-using-cox-regression-in-r
 
+# AreaRecordDF<-data.frame(
+#    Area=character(),
+#    Days_since_start=integer(), 
+#    DayYesterday    =integer(), 
+#    status          =integer(),
+#    RecordAtStartOfDay         =double(),
+#    standardised_casesDaily    =double(),
+#    standardised_casesYesterday=double(),
+#       stringsAsFactors=FALSE) 
+
 AreaRecordDF<-data.frame(
    Area=character(),
-   Days_since_start=integer(), 
-   DayYesterday    =integer(), 
-   status          =integer(),
-   RecordAtStartOfDay         =double(),
-   standardised_casesDaily    =double(),
-   standardised_casesYesterday=double(),
+   Weeks_since_start=integer(), 
+   WeekLastWeek     =integer(), 
+   status           =integer(),
+   RecordAtStartOfWeek         =double(),
+   standardised_casesWeekly    =double(),
+   standardised_casesLastWeek=double(),
       stringsAsFactors=FALSE) 
 
-#    event           =integer(),
 
+junk<-function(){
 
 for(i in 1:length(AreaVector)){
 # for(i in 1:50){
@@ -1471,6 +1422,7 @@ for(i in 1:length(AreaVector)){
       }
    }
 }
+
 
 AreaRecordDF$State<-substrRight(as.character(AreaRecordDF$Area), 2)   
 

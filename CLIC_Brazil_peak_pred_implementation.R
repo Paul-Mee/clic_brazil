@@ -18,14 +18,11 @@ source(paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 # loads function to be used for peak prediction
 source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))
 
-
-
 ### Calle AUCfn 
 ## arg1 = directory where Big Standard file is stored
 ####
 
 # AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects)
-
 TestingScalar<-TRUE # whether to use the testing option (subset of data in NE region)
 AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects, TestNE=TestingScalar)
 
