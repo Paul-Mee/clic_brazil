@@ -1308,7 +1308,7 @@ for(i in 1:10){
    # AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
    AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
    
-}
+
 
 # AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
 
@@ -1349,32 +1349,40 @@ AreaRecordDF<-data.frame(
    Weeks_since_start=integer(), 
    WeekLastWeek     =integer(), 
    status           =integer(),
-   RecordAtStartOfWeek         =double(),
-   standardised_casesWeekly    =double(),
+   RecordAtStartOfWeek       =double(),
+   standardised_casesWeekly  =double(),
    standardised_casesLastWeek=double(),
+   GapToRecord               =double(),
       stringsAsFactors=FALSE) 
 
-
-junk<-function(){
-
 for(i in 1:length(AreaVector)){
-# for(i in 1:50){
+# for(i in 1:5){
    
-   # print(i)
+   print(i)
 
-   AreaProfilesSubsetDF<-AreaProfilesDF[AreaProfilesDF$Area == AreaVector[i],]
-   AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Days_since_start)),]
+   # AreaProfilesSubsetDF<-AreaProfilesDF[AreaProfilesDF$Area == AreaVector[i],]
+   # AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Days_since_start)),]
+   AreaProfilesSubsetDF<-AreaProfilesWeeklyDF[AreaProfilesWeeklyDF$Area == AreaVector[i],]
+   AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Weeks_since_start)),]
 
-   peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesDaily)
+   peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesWeekly)
+   # print("peaksVector:")
+   # print(peaksVector)
 
    if(length(peaksVector)>0){
 
-      AreaProfilesPeakDF<-AreaProfilesSubsetDF[peaksVector,c("Days_since_start", "standardised_casesDaily")]
-      AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesDaily))
+      # print("AreaProfilesSubsetDF:")
+      # print(AreaProfilesSubsetDF)
+      AreaProfilesPeakDF<-AreaProfilesSubsetDF[peaksVector,c("Weeks_since_start", "standardised_casesWeekly")]
+      # print("AreaProfilesPeakDF:")
+      # print(AreaProfilesPeakDF)
+      # print(head(AreaProfilesPeakDF$standardised_casesWeekly))
+      # AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesWeekly))
+      print(summary(AreaProfilesPeakDF$diff))
 
       while(any(AreaProfilesPeakDF$diff<0)){
-         AreaProfilesPeakDF<-AreaProfilesPeakDF[AreaProfilesPeakDF$diff>=0,]
-         AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesDaily))
+         AreaProfilesPeakDF     <-AreaProfilesPeakDF[AreaProfilesPeakDF$diff>=0,]
+         AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesWeekly))
       }
       AreaProfilesPeakDF$peak<-T
 
@@ -1383,31 +1391,31 @@ for(i in 1:length(AreaVector)){
 
       AreaProfilesSubsetDF<-merge(
          x=AreaProfilesSubsetDF, 
-         y=AreaProfilesPeakDF[,c("Days_since_start", "peak")], 
-         by="Days_since_start", all.x=T, all.y=F)
+         y=AreaProfilesPeakDF[,c("Weeks_since_start", "peak")], 
+         by="Weeks_since_start", all.x=T, all.y=F)
 
       AreaProfilesSubsetDF$CurrentRecord<-ifelse(
          AreaProfilesSubsetDF$peak, 
-         AreaProfilesSubsetDF$standardised_casesDaily, NA
+         AreaProfilesSubsetDF$standardised_casesWeekly, NA
          )
 
-      AreaProfilesSubsetDF$RecordAtStartOfDay<-repeat.before(AreaProfilesSubsetDF$CurrentRecord)
-      AreaProfilesSubsetDF$RecordAtStartOfDay<-c(
+      AreaProfilesSubsetDF$RecordAtStartOfWeek<-repeat.before(AreaProfilesSubsetDF$CurrentRecord)
+      AreaProfilesSubsetDF$RecordAtStartOfWeek<-c(
          NA, 
-         AreaProfilesSubsetDF$RecordAtStartOfDay[1:I(length(AreaProfilesSubsetDF$RecordAtStartOfDay)-1)]
+         AreaProfilesSubsetDF$RecordAtStartOfWeek[1:I(length(AreaProfilesSubsetDF$RecordAtStartOfWeek)-1)]
          )
 
-      AreaProfilesSubsetDF$standardised_casesYesterday<-c(
+      AreaProfilesSubsetDF$standardised_casesLastWeek<-c(
          NA, 
-         AreaProfilesSubsetDF$standardised_casesDaily[1:I(length(AreaProfilesSubsetDF$standardised_casesDaily)-1)]
+         AreaProfilesSubsetDF$standardised_casesWeekly[1:I(length(AreaProfilesSubsetDF$standardised_casesWeekly)-1)]
          )
       
-      AreaProfilesSubsetDF$DayYesterday<-c(
+      AreaProfilesSubsetDF$WeekLastWeek<-c(
          NA, 
-         AreaProfilesSubsetDF$Days_since_start[1:I(length(AreaProfilesSubsetDF$Days_since_start)-1)]
+         AreaProfilesSubsetDF$Weeks_since_start[1:I(length(AreaProfilesSubsetDF$Weeks_since_start)-1)]
          )
 
-      AreaProfilesSubsetDF$GapToRecord<-AreaProfilesSubsetDF$RecordAtStartOfDay - AreaProfilesSubsetDF$standardised_casesYesterday
+      AreaProfilesSubsetDF$GapToRecord<-AreaProfilesSubsetDF$RecordAtStartOfWeek - AreaProfilesSubsetDF$standardised_casesLastWeek
 
       AreaProfilesSubsetDF$status<-ifelse(
          is.na(AreaProfilesSubsetDF$peak), 0, as.numeric(AreaProfilesSubsetDF$peak)
@@ -1415,13 +1423,20 @@ for(i in 1:length(AreaVector)){
       
       # AreaProfilesSubsetDF$event <-NA
       
+      print(AreaProfilesSubsetDF[,1:10])
+      # print(names(AreaProfilesSubsetDF))
+      
       AreaRecordDF<-rbind(AreaRecordDF,
-            AreaProfilesSubsetDF[,c("Area", "Days_since_start", "DayYesterday", "status",
-               "standardised_casesDaily", "standardised_casesYesterday",
-               "RecordAtStartOfDay", "GapToRecord")])
+            AreaProfilesSubsetDF[,c("Area", "Weeks_since_start", "WeekLastWeek", "status",
+               "RecordAtStartOfWeek", 
+               "standardised_casesWeekly", "standardised_casesLastWeek",
+               "GapToRecord")])
       }
    }
 }
+
+}
+junk<-function(){
 
 
 AreaRecordDF$State<-substrRight(as.character(AreaRecordDF$Area), 2)   
