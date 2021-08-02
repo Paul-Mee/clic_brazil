@@ -1435,10 +1435,6 @@ for(i in 1:length(AreaVector)){
    }
 }
 
-}
-junk<-function(){
-
-
 AreaRecordDF$State<-substrRight(as.character(AreaRecordDF$Area), 2)   
 
 # aggregate candidate predictor variables from the original DF, and merge in
@@ -1454,90 +1450,44 @@ AreaRecordDF$Area<-as.character(AreaRecordDF$Area)
 class(AreaRecordDF$Area)
 table(is.na(AreaRecordDF$Area))
 
-# head(AreaRecordDF)
-
-#AreaRecordSCDF<-AreaRecordDF[AreaRecordDF$Area=="São Caetano do Sul_SP",]
-#AreaRecordSCDF<-AreaRecordSCDF[order(AreaRecordSCDF$Days_since_start),]
-#AreaRecordSCDF[1:11,]
-
-# merge back the daily cases lagged by 2
-# AreaProfilesDF$Day2<-AreaProfilesDF$Days_since_start+2
-# AreaProfilesDay2DF<-AreaProfilesDF[,c("Area", "Day2", "standardised_casesDaily")]
-# names(AreaProfilesDay2DF)<-ifelse(names(AreaProfilesDay2DF)=="Day2", "Days_since_start", names(AreaProfilesDay2DF))
-# names(AreaProfilesDay2DF)<-ifelse(names(AreaProfilesDay2DF)=="standardised_casesDaily", "standardised_casesDaily2", names(AreaProfilesDay2DF))
-# summary(AreaProfilesDay2DF)
 
 # lagScalar<-2
-for(lagScalar in 2:7){
-   AreaProfilesDF[,paste0("Day", lagScalar)]<-AreaProfilesDF$Days_since_start+lagScalar
-   AreaProfilesLagDF<-AreaProfilesDF[,c("Area", paste0("Day", lagScalar), "standardised_casesDaily")]
-   # summary(AreaProfilesLagDF)
-   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)==paste0("Day", lagScalar), "Days_since_start", names(AreaProfilesLagDF))
-   # summary(AreaProfilesLagDF)
-   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)=="standardised_casesDaily", paste0("standardised_casesDaily", lagScalar), names(AreaProfilesLagDF))
-   # summary(AreaProfilesLagDF)
+
+# print("Field names in AreaProfilesDF:")
+# print(names(AreaProfilesDF))
+
+AreaProfilesWeeklyDF$Weeks_since_start<-as.numeric(AreaProfilesWeeklyDF$Weeks_since_start)
+
+LagMaxScalar<-4 # in the previous version it was 7 (days)
+
+for(lagScalar in 2:LagMaxScalar){
+   # print(unlist(list(lagScalar=lagScalar)))
+   # print(   head(AreaProfilesWeeklyDF))
+   # print(summary(AreaProfilesWeeklyDF))
+   AreaProfilesWeeklyDF[,paste0("Week", lagScalar)]<-AreaProfilesWeeklyDF$Weeks_since_start+lagScalar
+   AreaProfilesLagDF<-AreaProfilesWeeklyDF[,c("Area", paste0("Week", lagScalar), "standardised_casesWeekly")]
+   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)==paste0("Week", lagScalar), "Weeks_since_start", names(AreaProfilesLagDF))
+   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)=="standardised_casesWeekly", paste0("standardised_casesWeekly", lagScalar), names(AreaProfilesLagDF))
 
    # dim(AreaRecordDF)
    AreaRecordDF<-merge(x=AreaRecordDF, y=AreaProfilesLagDF, 
-                       by=c("Area", "Days_since_start"), all.x=T, all.y=F)
+                       by=c("Area", "Weeks_since_start"), all.x=T, all.y=F)
    # dim(AreaRecordDF)
 
-   # # For day 7, save the DF for later use in prediction
-   # # This will work for predicting 30 days ahead of the full dataset. 
-   # ...to be checked...
-   #
-   # # For the test/training dataset evaluation it will not work.  
-   # if(lagScalar==7){
-   #    AreaProfilesLag7DF<-AreaProfilesLagDF
-   # }
-
    AreaRecordDF[,paste0("GapToRecord", lagScalar)]<-
-      AreaRecordDF[,"RecordAtStartOfDay"] - AreaRecordDF[,paste0("standardised_casesDaily", lagScalar)]
+      AreaRecordDF[,"RecordAtStartOfWeek"] - AreaRecordDF[,paste0("standardised_casesWeekly", lagScalar)]
 }
 
-#AreaRecordSCDF<-AreaRecordDF[AreaRecordDF$Area=="São Caetano do Sul_SP",]
-#AreaRecordSCDF<-AreaRecordSCDF[order(AreaRecordSCDF$Days_since_start),]
-#AreaRecordSCDF[1:11,]
-#AreaRecordSCDF[1:8, c("Days_since_start", 
-#  "standardised_casesDaily", "standardised_casesYesterday", 
-#   paste0("standardised_casesDaily", c("2", "3", "4")))]
-#AreaRecordSCDF[1:8, c("Days_since_start", "RecordAtStartOfDay",
-#   "standardised_casesDaily", "standardised_casesYesterday", 
-#   paste0("GapToRecord", c("", "2", "3", "4")))]
-
-# dim(AreaRecordSCDF)
-# AreaRecordSCDF[((dim(AreaRecordSCDF)[1])-7):(dim(AreaRecordSCDF)[1]),c("Days_since_start", 
-#    "standardised_casesDaily", "standardised_casesYesterday", 
-#    paste0("standardised_casesDaily", c("2", "3", "4")))]
-# AreaRecordSCDF[((dim(AreaRecordSCDF)[1])-7):(dim(AreaRecordSCDF)[1]),c("Days_since_start", "RecordAtStartOfDay",
-#    "standardised_casesDaily", "standardised_casesYesterday", 
-#    paste0("GapToRecord", c("", "2", "3", "4")))]
-
-# AreaRecordDFtemp<-AreaRecordDF[order(c(as.character(AreaRecordDF$Area), AreaRecordDF$Days_since_start)),]
-# head(AreaRecordDFtemp)
-# table(is.na(AreaRecordDFtemp$Area))
-
-
-# View(AreaProfilesDF[AreaProfilesDF$Area=="Adamantina_SP",])
-
-# need to fix the following (if any):
-# AreaRecordDF[AreaRecordDF$DayStart==AreaRecordDF$DayStop,]
-
-
-# coxph(Surv(as.numeric(tstart),as.numeric(tstop),as.numeric(status))~ /
-# codetype+gender+age+patientIMD+ /
-# cluster(id)+strata(event),method="breslow", data=coxModel)
 
 CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
                 !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
-                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4) & !is.na(AreaRecordDF$GapToRecord5) & 
-                !is.na(AreaRecordDF$GapToRecord6) & !is.na(AreaRecordDF$GapToRecord7)
+                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4)
 table(CompleteSubset)
 
 # AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
 #                     1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 
-AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~
+AreaCoxphNull<-coxph(Surv(as.numeric(WeekLastWeek),as.numeric(Weeks_since_start),as.numeric(status))~
                     1, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
 print("Fitted first cluster model.")
 
@@ -1553,8 +1503,10 @@ table(is.na(AreaRecordDF$State))
 print("dim(AreaRecordDF) before:")
 print(dim(AreaRecordDF))
 
-print("### test to remove rows where  DayYesterday = NA")
-AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
+# print("### test to remove rows where  DayYesterday = NA")
+# AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
+print("### test to remove rows where  WeekLastWeek = NA")
+AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$WeekLastWeek)) ,]
 
 print("dim(AreaRecordDF) after:")
 print(dim(AreaRecordDF))
@@ -1562,8 +1514,7 @@ print(dim(AreaRecordDF))
 # recalculate to make it same length as new DF
 CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
                 !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
-                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4) & !is.na(AreaRecordDF$GapToRecord5) & 
-                !is.na(AreaRecordDF$GapToRecord6) & !is.na(AreaRecordDF$GapToRecord7)
+                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4)
 
 print("length(CompleteSubset):")
 print(length(CompleteSubset))
@@ -1614,12 +1565,16 @@ if(TestNE){
 #                  status)~ 1 + frailty(Area),method="breslow", 
 #                  data=AreaRecordDF, subset=CompleteSubset)
 
-AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+AreaCoxph<-coxph(Surv(as.numeric(WeekLastWeek),as.numeric(Weeks_since_start),
                  status)~ 1, cluster(Area),method="breslow",
                  data=AreaRecordDF, subset=CompleteSubset)
 # AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  status) ~ (1|Area), data=AreaRecordDF, subset=CompleteSubset)
 summary(AreaCoxph)
+
+}
+junk<-function(){
+
 
 # AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
 #                  status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
