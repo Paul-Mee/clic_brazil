@@ -83,9 +83,931 @@ substrRight <- function(x, n){
 }
 
 
+anovaCox<-function(model1, model2, Wald=F){
+   if(  "coxme" %in% class(model1) &   "coxme" %in% class(model2)){
+      # coxme models
+      # from coxme manual:
+      # "The likelihood for a mixed effects Cox model can be viewed in two ways: the ordinarly partial
+      # likelihood, where the random effects act only as a penalty or constraint, or a partial likelihood
+      # where the random effect has been integrated out. Both are valid."
+      #
+      # opt for "Integrated" likelihood because the DF are easier to understand
+      logLik1<-model2$loglik["Integrated"]
+      logLik2<-model1$loglik["Integrated"]
+      Chisq = abs(as.numeric(logLik2 - logLik1) * 2)
+      
+      Df = model2$df[1] - model1$df[1]
+      pval = pchisq(Chisq, Df, lower.tail=F)
+      print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+   }else{
+   if(! "coxme" %in% class(model1) & ! "coxme" %in% class(model2)){
+      # assume they are usual cox models
+      if(Wald){
+         Df    = abs(summary(model2)$waldtest["df"]   - summary(model1)$waldtest["df"])
+         Chisq = abs(summary(model2)$waldtest["test"] - summary(model1)$waldtest["test"])
+         pval = pchisq(Chisq, Df, lower.tail=F)
+         print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+      }else{
+         Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
+         Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
+         pval = pchisq(Chisq, Df, lower.tail=F)
+         print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+      }
+   }else{
+      stop("Error: models of different classes have been passed to the anovaCox function.")
+   }
+   }
+}
+
+
+
+
 # function to help calculate AUC for different datasets
 
 # based on "PM_peak_batch_v2 alpha-test.R"
+
+ 
+ 
+AUCfn <-function(FolderName, dir_script=dir_scripts, dir_data=dir_data_objects, dir_covar=dir_covariates, 
+                 TestNE=F){
+
+require(data.table)
+require(survival)
+require(ROCR)
+require(plotROC)
+    
+require(coxme)
+
+source(paste0(dir_script,"CLIC_Brazil_standardisation_functions.R"))
+
+fname <-  paste0(dir_data,"Brazil_BigStandard_results.RData")
+print(fname)
+    
+load(fname)
+
+
+### Merge covariates data 
+
+# preprocessing to re-route beginign of the epidemic depending on chosen area
+c_dat = as.data.table(re.route.origin(BigStandard$standardised_incidence))
+
+# Get covariates data 
+load(paste0(dir_covar,"Brazil_mun_covs.RData"))
+names(SDI)[names(SDI) == 'Area_Name'] <- 'Area'
+names(SDI)[names(SDI) == 'SDI_index'] <- 'SDI'
+SDI <- as.data.table(SDI)
+
+
+## Join data tables
+
+c_dat <- copy(c_dat[SDI,  on = "Area"])
+
+# drop if date_end is NA
+
+c_dat <- c_dat [!is.na(c_dat$date_end), ]
+
+
+## back to data frame - for back compatibility
+
+c_dat <- as.data.frame(c_dat)
+
+detach(package:data.table)
+
+
+# and add intervention timign data
+# c_dat = district.start.date.find(c_dat, BigStandard$Intervention)
+# sort(names(c_dat))
+# class(c_dat)
+AreaProfilesDF <- district.start.date.find(c_dat, BigStandard$Intervention)
+
+AreaProfilesDF$Days_since_start<-as.numeric(AreaProfilesDF$Days_since_start)
+
+summary(AreaProfilesDF$Days_since_start)
+
+AreaProfilesDF$State<-substrRight(as.character(AreaProfilesDF$Area), 2)   
+
+if(TestNE){
+   print("dim(AreaProfilesDF):")
+   print( dim(AreaProfilesDF))
+   print("Subsetting to NE region for testing purposes...")
+   AreaProfilesDF<-AreaProfilesDF[ 
+      AreaProfilesDF$State %in% c("AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"),]
+   print("dim(AreaProfilesDF):")
+   print( dim(AreaProfilesDF))
+}
+
+
+# ReferenceAreaScalar<-"Guarulhos_SP"
+
+# AreaProfilesSubsetDF<-AreaProfilesDF[AreaProfilesDF$Area == ReferenceAreaScalar,]
+
+# AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Days_since_start)),]
+
+# AreaProfilesSubsetDF$standardised_casesDaily<-c(0, diff(AreaProfilesSubsetDF$standardised_cases))
+
+# head(AreaProfilesSubsetDF[,c("Days_since_start", "standardised_cases", "standardised_casesDaily")])
+
+# # peak number of daily cases
+# max(AreaProfilesSubsetDF$standardised_casesDaily)
+# max(AreaProfilesSubsetDF$Days_since_start)
+
+# latest number of cases
+# AreaProfilesSubsetDF[which.max(AreaProfilesSubsetDF$Days_since_start),"standardised_casesDaily"]
+
+# difference between peak and latest number of cases
+# max(AreaProfilesSubsetDF$standardised_casesDaily)-AreaProfilesSubsetDF[which.max(AreaProfilesSubsetDF$Days_since_start),"standardised_casesDaily"]
+
+# distribution of latest days across municipalities
+AreaProfilesLatestDayDF<-aggregate(Days_since_start ~ Area, max, data=AreaProfilesDF)
+head(AreaProfilesLatestDayDF)
+summary(AreaProfilesLatestDayDF$Days_since_start)
+# order from high to low in terms of max days
+AreaProfilesLatestDayDF<-AreaProfilesLatestDayDF[rev(order(as.numeric(AreaProfilesLatestDayDF$Days_since_start))),]
+head(AreaProfilesLatestDayDF)
+
+# ggplot(AreaProfilesDF[AreaProfilesDF$Area %in% AreaProfilesLatestDayDF[1:10, "Area"],], 
+#    aes(x = Days_since_start, y = log10(standardised_cases), group = Area))  + 
+#    geom_line(aes(color=rank(Area)))
+
+# order the main DF by area and day
+AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
+head(AreaProfilesDF[,c("Area", "Days_since_start")])
+# View(AreaProfilesDF)
+# sort(names(AreaProfilesDF))
+# View(AreaProfilesDF[AreaProfilesDF$Area=="Adamantina_SP",])
+
+AreaVector<-as.character(sort(unique(AreaProfilesDF$Area)))
+length(AreaVector)
+
+# AreaProfilesDailyDF<-data.frame(
+#    Area=character(),
+#    Days_since_start=integer(), 
+#    standardised_cases=double(),
+#    standardised_casesDaily=double(),
+#       stringsAsFactors=FALSE)
+
+AreaProfilesWeeklyDF<-data.frame(
+   Area=character(),
+   Weeks_since_start=integer(), 
+   standardised_casesWeekly=double(),
+      stringsAsFactors=FALSE)
+
+# calculate new cases by day, by differencing the cumulative cases
+for(i in 1:length(AreaVector)){
+# for(i in 1:10){
+   # print(unlist(list(Area=i)))
+   AreaProfilesDailysubsetDF<-AreaProfilesDF[
+      AreaProfilesDF$Area==AreaVector[i], 
+      c("Area", "Days_since_start", "standardised_cases")]
+   AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
+   AreaProfilesDailysubsetDF$standardised_casesDaily<-c(0, diff(AreaProfilesDailysubsetDF$standardised_cases))
+   
+   if(nrow(AreaProfilesDailysubsetDF)>0){
+      # print(head(AreaProfilesDailysubsetDF))
+      StripLastPartialWeekObj<-StripLastPartialWeek(AreaProfilesDailysubsetDF$Days_since_start)
+      Days_since_startWeekTruncated<-StripLastPartialWeekObj$WeekTruncated
+      Days_since_startDayTruncated <-StripLastPartialWeekObj$DayTruncated
+      # print(dim(AreaProfilesDailysubsetDF))
+      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[
+         AreaProfilesDailysubsetDF$Days_since_start %in% Days_since_startDayTruncated,]
+      # print(dim(AreaProfilesDailysubsetDF))
+      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
+      AreaProfilesDailysubsetDF$Weeks_since_start<-as.numeric(Days_since_startWeekTruncated)
+      # print(AreaProfilesDailysubsetDF)
+     
+      AreaProfilesWeeklysubsetDF<-as.data.frame(tapply(
+         AreaProfilesDailysubsetDF$standardised_casesDaily, 
+         AreaProfilesDailysubsetDF$Weeks_since_start, 
+         sum))
+     
+      names(AreaProfilesWeeklysubsetDF)<-"standardised_casesWeekly"
+      AreaProfilesWeeklysubsetDF$Weeks_since_start<-as.numeric(rownames(AreaProfilesWeeklysubsetDF))
+      AreaProfilesWeeklysubsetDF$Area             <-AreaVector[i]
+      # print(head(AreaProfilesWeeklysubsetDF))
+   } 
+   # AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
+   AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
+   
+
+
+# AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
+
+# don't modify or run the following; means that the main DF to work with should be AreaProfilesWeeklyDF
+#
+# # merge back
+#   dim(AreaProfilesDF)
+# names(AreaProfilesDF)
+# AreaProfilesDF<-merge(
+#    x=AreaProfilesDF, y=AreaProfilesWeeklyDF, 
+#    by=c("Area", "Days_since_start"), all.x=F, all.y=T)
+# dim(AreaProfilesDF)
+# print(names(AreaProfilesDF))
+# AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
+# # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
+# print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
+
+
+}
+
+
+# peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesDaily)
+
+# https://stats.stackexchange.com/questions/353692/modelling-recurrent-events-using-cox-regression-in-r
+
+# AreaRecordDF<-data.frame(
+#    Area=character(),
+#    Days_since_start=integer(), 
+#    DayYesterday    =integer(), 
+#    status          =integer(),
+#    RecordAtStartOfDay         =double(),
+#    standardised_casesDaily    =double(),
+#    standardised_casesYesterday=double(),
+#       stringsAsFactors=FALSE) 
+
+AreaRecordDF<-data.frame(
+   Area=character(),
+   Weeks_since_start=integer(), 
+   WeekLastWeek     =integer(), 
+   status           =integer(),
+   RecordAtStartOfWeek       =double(),
+   standardised_casesWeekly  =double(),
+   standardised_casesLastWeek=double(),
+   GapToRecord               =double(),
+      stringsAsFactors=FALSE) 
+
+for(i in 1:length(AreaVector)){
+# for(i in 1:5){
+   
+   # print(i)
+
+   # AreaProfilesSubsetDF<-AreaProfilesDF[AreaProfilesDF$Area == AreaVector[i],]
+   # AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Days_since_start)),]
+   AreaProfilesSubsetDF<-AreaProfilesWeeklyDF[AreaProfilesWeeklyDF$Area == AreaVector[i],]
+   AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Weeks_since_start)),]
+
+   peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesWeekly)
+   # print("peaksVector:")
+   # print(peaksVector)
+
+   if(length(peaksVector)>0){
+
+      # print("AreaProfilesSubsetDF:")
+      # print(AreaProfilesSubsetDF)
+      AreaProfilesPeakDF<-AreaProfilesSubsetDF[peaksVector,c("Weeks_since_start", "standardised_casesWeekly")]
+      # print("AreaProfilesPeakDF:")
+      # print(AreaProfilesPeakDF)
+      # print(head(AreaProfilesPeakDF$standardised_casesWeekly))
+      AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesWeekly))
+      # print(summary(AreaProfilesPeakDF$diff))
+
+      while(any(AreaProfilesPeakDF$diff<0)){
+         AreaProfilesPeakDF     <-AreaProfilesPeakDF[AreaProfilesPeakDF$diff>=0,]
+         AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesWeekly))
+      }
+      AreaProfilesPeakDF$peak<-T
+      if(i<=5){
+         print("AreaProfilesPeakDF:")
+         print(AreaProfilesPeakDF)
+      }
+
+
+   # require at least two peaks
+   if(I(dim(AreaProfilesPeakDF)[1])>=2){
+
+      AreaProfilesSubsetDF<-merge(
+         x=AreaProfilesSubsetDF, 
+         y=AreaProfilesPeakDF[,c("Weeks_since_start", "peak")], 
+         by="Weeks_since_start", all.x=T, all.y=F)
+
+      AreaProfilesSubsetDF$CurrentRecord<-ifelse(
+         AreaProfilesSubsetDF$peak, 
+         AreaProfilesSubsetDF$standardised_casesWeekly, NA
+         )
+
+      AreaProfilesSubsetDF$RecordAtStartOfWeek<-repeat.before(AreaProfilesSubsetDF$CurrentRecord)
+      AreaProfilesSubsetDF$RecordAtStartOfWeek<-c(
+         NA, 
+         AreaProfilesSubsetDF$RecordAtStartOfWeek[1:I(length(AreaProfilesSubsetDF$RecordAtStartOfWeek)-1)]
+         )
+
+      AreaProfilesSubsetDF$standardised_casesLastWeek<-c(
+         NA, 
+         AreaProfilesSubsetDF$standardised_casesWeekly[1:I(length(AreaProfilesSubsetDF$standardised_casesWeekly)-1)]
+         )
+      
+      AreaProfilesSubsetDF$WeekLastWeek<-c(
+         NA, 
+         AreaProfilesSubsetDF$Weeks_since_start[1:I(length(AreaProfilesSubsetDF$Weeks_since_start)-1)]
+         )
+
+      AreaProfilesSubsetDF$GapToRecord<-AreaProfilesSubsetDF$RecordAtStartOfWeek - AreaProfilesSubsetDF$standardised_casesLastWeek
+
+      AreaProfilesSubsetDF$status<-ifelse(
+         is.na(AreaProfilesSubsetDF$peak), 0, as.numeric(AreaProfilesSubsetDF$peak)
+         )
+      
+      # AreaProfilesSubsetDF$event <-NA
+      
+      if(i<=5){
+         print("first ten columns of AreaProfilesSubsetDF:")
+         print(AreaProfilesSubsetDF[,1:10])
+      }
+      # print(names(AreaProfilesSubsetDF))
+      
+      AreaRecordDF<-rbind(AreaRecordDF,
+            AreaProfilesSubsetDF[,c("Area", "Weeks_since_start", "WeekLastWeek", "status",
+               "RecordAtStartOfWeek", 
+               "standardised_casesWeekly", "standardised_casesLastWeek",
+               "GapToRecord")])
+      }
+   }
+}
+
+AreaRecordDF$State<-substrRight(as.character(AreaRecordDF$Area), 2)   
+
+# aggregate candidate predictor variables from the original DF, and merge in
+AreaProfilesAggDF<-aggregate(cbind(popden, SDI) ~ Area, mean, na.rm=T, data=AreaProfilesDF) 
+head(AreaProfilesAggDF) 
+
+dim(AreaRecordDF) 
+AreaRecordDF<-merge(x=AreaRecordDF, y=AreaProfilesAggDF, all.x=T, all.y=F, by="Area") 
+dim(AreaRecordDF) 
+
+class(AreaRecordDF$Area) 
+AreaRecordDF$Area<-as.character(AreaRecordDF$Area)
+class(AreaRecordDF$Area)
+table(is.na(AreaRecordDF$Area))
+
+
+# lagScalar<-2
+
+# print("Field names in AreaProfilesDF:")
+# print(names(AreaProfilesDF))
+
+AreaProfilesWeeklyDF$Weeks_since_start<-as.numeric(AreaProfilesWeeklyDF$Weeks_since_start)
+
+LagMaxScalar<-4 # in the previous version it was 7 (days)
+
+for(lagScalar in 2:LagMaxScalar){
+   # print(unlist(list(lagScalar=lagScalar)))
+   # print(   head(AreaProfilesWeeklyDF))
+   # print(summary(AreaProfilesWeeklyDF))
+   AreaProfilesWeeklyDF[,paste0("Week", lagScalar)]<-AreaProfilesWeeklyDF$Weeks_since_start+lagScalar
+   AreaProfilesLagDF<-AreaProfilesWeeklyDF[,c("Area", paste0("Week", lagScalar), "standardised_casesWeekly")]
+   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)==paste0("Week", lagScalar), "Weeks_since_start", names(AreaProfilesLagDF))
+   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)=="standardised_casesWeekly", paste0("standardised_casesWeekly", lagScalar), names(AreaProfilesLagDF))
+
+   # dim(AreaRecordDF)
+   AreaRecordDF<-merge(x=AreaRecordDF, y=AreaProfilesLagDF, 
+                       by=c("Area", "Weeks_since_start"), all.x=T, all.y=F)
+   # dim(AreaRecordDF)
+
+   AreaRecordDF[,paste0("GapToRecord", lagScalar)]<-
+      AreaRecordDF[,"RecordAtStartOfWeek"] - AreaRecordDF[,paste0("standardised_casesWeekly", lagScalar)]
+}
+
+
+CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
+                !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
+                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4)
+table(CompleteSubset)
+
+
+print("summary of relevant fields of AreaRecordDF[CompleteSubset,]:")
+print( summary(AreaRecordDF[CompleteSubset,c("WeekLastWeek", "Weeks_since_start", "status", "Area")]))
+
+AreaCoxphNullWithoutClustering<-coxph(Surv(WeekLastWeek, Weeks_since_start, status)~1, 
+                      method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+print(summary(AreaCoxphNullWithoutClustering))
+
+AreaCoxphNullCluster<-NA
+try(AreaCoxphNullCluster<-coxph(Surv(WeekLastWeek, Weeks_since_start, status)~ 1, 
+         cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset))
+if(!is.null(AreaCoxphNullCluster)){
+   print("summary(AreaCoxphNullCluster):")
+   print( summary(AreaCoxphNullCluster))
+}
+
+# AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxphNullFrailty<-NA
+try(AreaCoxphNullFrailty<-coxph(Surv(WeekLastWeek, Weeks_since_start, status)~ 1 + frailty(Area), 
+   method="breslow", data=AreaRecordDF, subset=CompleteSubset))
+if(!is.null(AreaCoxphNullFrailty)){
+   print("summary(AreaCoxphNullFrailty):")
+   print( summary(AreaCoxphNullFrailty))
+}
+
+
+# AreaCoxphNull<-NA
+# try(AreaCoxphNull<-coxme(Surv(WeekLastWeek, Weeks_since_start, status)~ 1 + (1|Area), 
+#                                                          data=AreaRecordDF, subset=CompleteSubset))
+# if(!is.null(AreaCoxphNull)){
+#    print("summary(AreaCoxphNull):")
+#    print( summary(AreaCoxphNull))
+# }
+
+table(is.na(AreaRecordDF$State))
+
+print("dim(AreaRecordDF) before:")
+print(dim(AreaRecordDF))
+
+# print("### test to remove rows where  DayYesterday = NA")
+# AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
+print("### test to remove rows where  WeekLastWeek = NA")
+AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$WeekLastWeek)) ,]
+
+print("dim(AreaRecordDF) after:")
+print(dim(AreaRecordDF))
+
+# recalculate to make it same length as new DF
+CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
+                !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
+                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4)
+
+print("length(CompleteSubset):")
+print(length(CompleteSubset))
+
+if(TestNE){
+   print("table(CompleteSubset):")
+   print(table(CompleteSubset))
+   print("Subsetting to NE region for testing purposes...")
+   CompleteSubset<-CompleteSubset & 
+      AreaRecordDF$State %in% c("AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE")
+   print("table(CompleteSubset):")
+   print(table(CompleteSubset))
+}
+
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     as.factor(State), cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     as.factor(State) + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# summary(AreaCoxph)
+
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     popden + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     popden, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     popden + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# summary(AreaCoxph)
+
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     SDI, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
+#                     SDI + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
+# summary(AreaCoxph)
+
+# plot(survfit(AreaCoxph))
+# 
+# plot(survfit(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ as.factor(State), 
+#              data=AreaRecordDF))
+
+# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  status)~ 1 + frailty(Area),method="breslow", 
+#                  data=AreaRecordDF, subset=CompleteSubset)
+
+# # AreaCoxph<-coxph(Surv(as.numeric(WeekLastWeek),as.numeric(Weeks_since_start),
+# #                  status)~ 1, cluster(Area),method="breslow",
+# #                  data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph<-coxme(Surv(WeekLastWeek, Weeks_since_start, status) ~ (1|Area), 
+#                  data=AreaRecordDF, subset=CompleteSubset)
+# #
+# 
+# # AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+# #                  status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
+# #                  data=AreaRecordDF, subset=CompleteSubset)
+# # AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+# #                  status)~ GapToRecord + GapToRecord2, cluster(Area), method="breslow",
+# #                  data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph2<-coxme(Surv(WeekLastWeek,Weeks_since_start,status)~ GapToRecord + GapToRecord2 + (1|Area),
+#                  data=AreaRecordDF, subset=CompleteSubset)
+
+# https://stackoverflow.com/questions/58588833/why-do-i-get-an-error-in-anova-test-on-cox-models-in-r
+
+# anovaCox<-function(model1, model2){
+#    Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
+#    Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
+#    pval = pchisq(Chisq, Df, lower.tail=F)
+#    print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
+# }
+# anovaCox(AreaCoxph, AreaCoxph2)
+# print("First use of anovaCox().")
+
+# quit(save="ask")
+
+# if(Sys.info()[['user']]=="eidenale"){
+#    # https://stackoverflow.com/questions/49013427/r-saving-image-within-function-is-not-loading
+#    # save.image(file = "C:\\Users\\eidenale\\Downloads\\debug.RData")
+#    save(
+#       list = ls(all.names = TRUE), 
+#       file = "C:\\Users\\eidenale\\Downloads\\debug.RData", 
+#       envir =  environment())
+#    # load("C:\\Users\\eidenale\\Downloads\\debug.RData")
+# }
+
+# print("summary(AreaCoxph):")
+# print(summary(AreaCoxph))
+# # AreaCoxph$loglik
+# print("summary(AreaCoxph2):")
+# print(summary(AreaCoxph2))
+
+# https://stackoverflow.com/questions/19226816/how-can-i-view-the-source-code-for-a-function
+# methods(anova)
+# getAnywhere(anova.coxme)
+# getAnywhere(anova.coxmelist)
+# require(coxme)
+
+# https://www.python2.net/questions-175391.htm
+
+# anova(AreaCoxph, AreaCoxph2)
+# anovaCox(AreaCoxph, AreaCoxph2, Wald=T)
+# print("First use of anovaCox has been done.")
+
+######
+###### following is for testing; can comment out in normal use
+######
+
+# # AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+# #                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
+# #                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
+# AreaCoxph4<-coxme(Surv(WeekLastWeek, Weeks_since_start, status)~ 
+#                  GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 +  (1|Area), 
+#                  data=AreaRecordDF, subset=CompleteSubset)
+# print("summary(AreaCoxph4):")
+# print( summary(AreaCoxph4))
+# 
+# print("anovaCox(AreaCoxph2, AreaCoxph4):")
+# print( anovaCox(AreaCoxph2, AreaCoxph4))
+# 
+# AreaCoxphState<-coxme(Surv(WeekLastWeek, Weeks_since_start, status)~ 
+#                 GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + as.factor(State)  +  (1|Area),
+#                 data=AreaRecordDF, subset=CompleteSubset)
+# print("summary(AreaCoxphState):")
+# print( summary(AreaCoxphState))
+# 
+# AreaCoxphPopden<-coxme(Surv(WeekLastWeek, Weeks_since_start, status)~ 
+#                 GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + popden  +  (1|Area),
+#                 data=AreaRecordDF, subset=CompleteSubset)
+# print("summary(AreaCoxphPopden):")
+# print( summary(AreaCoxphPopden))
+# 
+# AreaCoxphSDI<-coxme(Surv(WeekLastWeek, Weeks_since_start, status)~
+#                 GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + SDI  +  (1|Area),
+#                 data=AreaRecordDF, subset=CompleteSubset)
+# print("summary(AreaCoxphSDI):")
+# print( summary(AreaCoxphSDI))
+
+######
+###### end of code commented out for testing
+######
+
+# chosen model
+# AreaCoxph<-coxme(Surv(WeekLastWeek, Weeks_since_start, status) ~ 
+#    GapToRecord + GapToRecord2 + GapToRecord3 + as.factor(State) + popden + as.factor(State) + (1|Area),
+#    data=AreaRecordDF, subset=CompleteSubset)
+AreaCoxph<-coxph(Surv(WeekLastWeek, Weeks_since_start, status) ~ 
+   GapToRecord + GapToRecord2 + GapToRecord3 + as.factor(State) + popden + as.factor(State) + frailty(Area),
+   data=AreaRecordDF, subset=CompleteSubset)
+
+print("summary(AreaCoxph):")
+print( summary(AreaCoxph))
+
+AreaCoxphFormula<-AreaCoxph$formula
+AreaCoxphFormula
+
+# make new dataset to predict 4 weeks ahead
+# pick out latest record for each municipality
+
+print("names(AreaRecordDF):")
+print( names(AreaRecordDF))
+
+AreaRecordMaxDF<-aggregate(Weeks_since_start ~ Area, max, data=AreaRecordDF)
+# head(AreaRecordMaxDF)
+dim(AreaRecordMaxDF)
+
+AreaRecordPredictDF<-merge(
+   x=AreaRecordDF[,c("Area", "Weeks_since_start", "status", 
+                     "standardised_casesWeekly",  "standardised_casesLastWeek",
+                     "RecordAtStartOfWeek", "State", "SDI", "popden",
+                     paste0("standardised_casesWeekly", 2:4))], 
+   y=AreaRecordMaxDF, all.x=F, all.y=T, 
+   by=c("Area", "Weeks_since_start"))
+dim(AreaRecordPredictDF)
+
+print("Created AreaRecordPredictDF by merging.")
+
+table(AreaRecordPredictDF$status)
+
+# start day for prediction is last day of existing data
+# this is a new field, not merged in from "AreaRecordDF"
+AreaRecordPredictDF$WeekLastWeek      <-AreaRecordPredictDF$Weeks_since_start
+
+AreaRecordPredictDF$Weeks_since_start  <-AreaRecordPredictDF$WeekLastWeek+4
+AreaRecordPredictDF$RecordAtStartOfWeek<-ifelse(
+   as.logical(AreaRecordPredictDF$status), 
+              AreaRecordPredictDF$standardised_casesWeekly, 
+              AreaRecordPredictDF$RecordAtStartOfWeek)
+
+print("Created RecordAtStartOfWeek variable in AreaRecordPredictDF.")
+
+#now shuffle the case-by-day variables by one week
+names(AreaRecordPredictDF)<-ifelse(
+   names(AreaRecordPredictDF)=="standardised_casesWeekly3",
+                               "standardised_casesWeekly4", names(AreaRecordPredictDF))
+names(AreaRecordPredictDF)<-ifelse(
+   names(AreaRecordPredictDF)=="standardised_casesWeekly2",
+                               "standardised_casesWeekly3", names(AreaRecordPredictDF))
+names(AreaRecordPredictDF)<-ifelse(
+   names(AreaRecordPredictDF)=="standardised_casesLastWeek",
+                               "standardised_casesWeekly2", names(AreaRecordPredictDF))
+names(AreaRecordPredictDF)<-ifelse(
+   names(AreaRecordPredictDF)=="standardised_casesWeekly",
+                               "standardised_casesLastWeek", names(AreaRecordPredictDF))
+
+sort(names(AreaRecordPredictDF))
+
+AreaRecordPredictDF$GapToRecord <-AreaRecordPredictDF$RecordAtStartOfWeek-AreaRecordPredictDF$standardised_casesLastWeek
+AreaRecordPredictDF$GapToRecord2<-AreaRecordPredictDF$RecordAtStartOfWeek-AreaRecordPredictDF$standardised_casesWeekly2
+AreaRecordPredictDF$GapToRecord3<-AreaRecordPredictDF$RecordAtStartOfWeek-AreaRecordPredictDF$standardised_casesWeekly3
+AreaRecordPredictDF$GapToRecord4<-AreaRecordPredictDF$RecordAtStartOfWeek-AreaRecordPredictDF$standardised_casesWeekly4
+
+print("Shifted  variables by time in AreaRecordPredictDF.")
+
+SubsetNameVector<-c("Area", "status", "WeekLastWeek", "Weeks_since_start", 
+   "RecordAtStartOfWeek", "standardised_casesLastWeek", 
+   paste0("GapToRecord", c("", as.character(2:4))), "State", "SDI", "popden")
+SubsetNameVector
+AreaRecordPredictDF<-AreaRecordPredictDF[,SubsetNameVector]
+
+print("Subsetted variables in AreaRecordPredictDF.")
+
+
+# AreaRecordPredictDF[AreaRecordPredictDF$Area=="São Caetano do Sul_SP",]
+
+AreaRecordPredictDF$Predict<-predict(AreaCoxph, newdata=AreaRecordPredictDF, type ="expected")
+# head(AreaRecordPredictDF$Predict)
+# prob of event, which is 1-survival prob
+AreaRecordPredictDF$PredictProb<-1-exp(-AreaRecordPredictDF$Predict)
+
+}
+junk<-function(){
+
+# plot(x=AreaRecordPredictDF$Days_since_start, y=AreaRecordPredictDF$PredictProb)
+
+# merge back in the x and y
+
+# sort(names(AreaProfilesDF))
+
+XDF<-aggregate(X ~ Area, mean, data=AreaProfilesDF, na.rm=T)
+YDF<-aggregate(Y ~ Area, mean, data=AreaProfilesDF, na.rm=T)
+
+AreaRecordPredictDF<-merge(x=AreaRecordPredictDF, y=XDF, by="Area", all.x=T, all.y=F)   
+AreaRecordPredictDF<-merge(x=AreaRecordPredictDF, y=YDF, by="Area", all.x=T, all.y=F)   
+
+table(is.na(AreaRecordPredictDF$PredictProb))
+
+# eqscplot(AreaRecordPredictDF$X, AreaRecordPredictDF$Y, 
+#      col=ifelse(AreaRecordPredictDF$PredictProb<0.25, "steelblue1",
+#          ifelse(AreaRecordPredictDF$PredictProb<0.50, "steelblue2",
+#          ifelse(AreaRecordPredictDF$PredictProb<0.75, "steelblue3", "steelblue4"))), 
+#      pch=20, cex=0.5)
+
+saveRDS(AreaRecordPredictDF, file = (paste0(dir_peak_data,"Peak.rds")))
+
+# evaluate performance by fitting a similar model to data with the last 30 days removed
+names(AreaRecordMaxDF)<-ifelse(
+   names(AreaRecordMaxDF)=="Days_since_start", "Days_since_startMax", names(AreaRecordMaxDF))
+names(AreaRecordMaxDF)
+
+dim(AreaRecordDF)
+# make a new DF which will be subsetted for the training DF and further down for the test DF
+AreaRecordTestTrainingDF<-merge(
+   x=AreaRecordDF[,c("Area", "DayYesterday", "Days_since_start", "status", 
+                     "standardised_casesDaily", "standardised_casesYesterday",  
+                     "RecordAtStartOfDay", "GapToRecord", "GapToRecord6", "GapToRecord7", "State", "SDI", 
+                     paste0("standardised_casesDaily", 2:6))], 
+   y=AreaRecordMaxDF, all.x=T, all.y=F, 
+   by=c("Area"))
+dim(AreaRecordTestTrainingDF)
+names(AreaRecordTestTrainingDF)
+AreaRecordTrainingDF<-AreaRecordTestTrainingDF[
+   AreaRecordTestTrainingDF$Days_since_start-AreaRecordTestTrainingDF$Days_since_startMax<=I(-30),]
+dim(AreaRecordTrainingDF)
+# AreaRecordTrainingDF[AreaRecordTrainingDF$Area=="São Caetano do Sul_SP",]
+
+# AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
+#                  method="breslow",
+#                  data=AreaRecordTrainingDF)
+AreaTrainingCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + (1|Area),
+                 data=AreaRecordTrainingDF)
+
+# re-use the formula from above
+# AreaTrainingCoxph<-coxph(AreaCoxphFormula,
+#                  method="breslow",
+#                  data=AreaRecordTrainingDF)
+# summary(AreaTrainingCoxph)
+
+# make the predictions for the next 30 days as if they were unknown
+AreaRecordTrainingMaxDF<-aggregate(Days_since_start ~ Area, max, data=AreaRecordTrainingDF)
+
+AreaRecordTrainingPredictDF<-merge(
+   x=AreaRecordTrainingDF[,c(
+      "Area", "Days_since_start", "status", 
+      "standardised_casesDaily", "standardised_casesYesterday",
+      "RecordAtStartOfDay", "State", "SDI",
+                     paste0("standardised_casesDaily", 2:6))], 
+   y=AreaRecordTrainingMaxDF, all.x=F, all.y=T, 
+   by=c("Area", "Days_since_start"))
+dim(AreaRecordTrainingPredictDF)
+
+
+# make the prediction dataset along the lines done already for the genuinely unknown data
+AreaRecordTrainingPredictDF$DayYesterday      <-AreaRecordTrainingPredictDF$Days_since_start
+AreaRecordTrainingPredictDF$Days_since_start  <-AreaRecordTrainingPredictDF$DayYesterday+30
+AreaRecordTrainingPredictDF$RecordAtStartOfDay<-ifelse(
+   as.logical(AreaRecordTrainingPredictDF$status), 
+              AreaRecordTrainingPredictDF$standardised_casesDaily, 
+              AreaRecordTrainingPredictDF$RecordAtStartOfDay)
+
+# AreaRecordTrainingPredictDF$standardised_casesYesterday<-AreaRecordTrainingPredictDF$standardised_casesDaily
+# AreaRecordTrainingPredictDF$GapToRecord                <-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesYesterday
+
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesDaily6",
+                               "standardised_casesDaily7", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesDaily5",
+                               "standardised_casesDaily6", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesDaily4",
+                               "standardised_casesDaily5", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesDaily3",
+                               "standardised_casesDaily4", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesDaily2",
+                               "standardised_casesDaily3", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesYesterday",
+                               "standardised_casesDaily2", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)<-ifelse(
+names(AreaRecordTrainingPredictDF)=="standardised_casesDaily",
+                               "standardised_casesYesterday", names(AreaRecordTrainingPredictDF))
+
+AreaRecordTrainingPredictDF$GapToRecord <-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesYesterday
+AreaRecordTrainingPredictDF$GapToRecord2<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily2
+AreaRecordTrainingPredictDF$GapToRecord3<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily3
+AreaRecordTrainingPredictDF$GapToRecord4<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily4
+AreaRecordTrainingPredictDF$GapToRecord5<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily5
+AreaRecordTrainingPredictDF$GapToRecord6<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily6
+AreaRecordTrainingPredictDF$GapToRecord7<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily7
+
+
+# AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,c(
+#    "Area", "status", "DayYesterday", "Days_since_start", "RecordAtStartOfDay", "standardised_casesYesterday", "GapToRecord")]
+
+# SubsetNameVector was defined above
+AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,SubsetNameVector]
+
+# AreaRecordTrainingPredictDF[AreaRecordTrainingPredictDF$Area=="São Caetano do Sul_SP",]
+
+AreaRecordTrainingPredictDF$Predict<-predict(AreaTrainingCoxph, newdata=AreaRecordTrainingPredictDF, type ="expected")
+# prob of event, which is 1-survival prob
+AreaRecordTrainingPredictDF$PredictProb<-1-exp(-AreaRecordTrainingPredictDF$Predict)
+# hist(AreaRecordTrainingPredictDF$PredictProb)
+# plot(x=AreaRecordTrainingPredictDF$Days_since_start, y=AreaRecordTrainingPredictDF$PredictProb)
+summary(AreaRecordTrainingPredictDF$Predict)
+
+# AreaRecordTrainingPredictDF[AreaRecordTrainingPredictDF$Area=="São Caetano do Sul_SP",]
+
+# check there is one record per area
+table(table(AreaRecordTrainingPredictDF$Area))
+# View(AreaRecordTrainingPredictDF)
+
+# make a test dataset out of the remaining records in the source data
+AreaRecordTestDF<-AreaRecordTestTrainingDF[
+   AreaRecordTestTrainingDF$Days_since_start-AreaRecordTestTrainingDF$Days_since_startMax>I(-30),]
+dim(AreaRecordTestDF)
+# AreaRecordTestDF[AreaRecordTestDF$Area=="São Caetano do Sul_SP",]
+
+AreaRecordTestDF<-aggregate(status ~ Area, sum, data=AreaRecordTestDF, na.rm=T)
+names(AreaRecordTestDF)<-ifelse(names(AreaRecordTestDF)=="status", "EventsObserved", names(AreaRecordTestDF))
+ # head(AreaRecordTestDF)
+table(AreaRecordTestDF$EventsObserved)
+# AreaRecordTestDF[AreaRecordTestDF$Area=="São Caetano do Sul_SP",]
+
+# merge into the TrainingDF
+dim(AreaRecordTrainingPredictDF)
+AreaRecordTrainingPredictDF<-merge(
+   x=AreaRecordTrainingPredictDF, 
+   y=AreaRecordTestDF, all.x = T, all.y = F, by="Area")
+dim(AreaRecordTrainingPredictDF)
+
+# plot(x=AreaRecordTrainingPredictDF$EventsObserved, 
+#      y=AreaRecordTrainingPredictDF$Predict)
+
+# cor(x=AreaRecordTrainingPredictDF$EventsObserved, y=AreaRecordTrainingPredictDF$Predict, 
+#     use="complete.obs")
+
+# names(AreaRecordTrainingPredictDF)
+
+par(mfrow=c(1,1))
+
+# https://afit-r.github.io/histograms
+# ggplot(AreaRecordTrainingPredictDF, aes(x=PredictProb)) + 
+#    geom_histogram() +
+#         facet_grid(sign(EventsObserved) ~ .)
+
+# practice ROC curve
+# https://cran.r-project.org/web/packages/ROCR/ROCR.pdf
+# data(ROCR.simple)
+# head(ROCR.simple)
+# names(ROCR.simple)
+# class(ROCR.simple)
+# pred <- prediction( ROCR.simple$predictions, ROCR.simple$labels)
+# pred
+# perf <- performance(pred,"tpr","fpr")
+# perf
+# plot(perf)
+# plot(perf, colorize=TRUE)
+# # ...fairly straightforward once you know what argument values to pass to performance()
+
+# predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
+# pred <- prediction(
+#    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector],
+#         labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
+# perf <- performance(pred,"tpr","fpr")
+# plot(perf, colorize=TRUE)
+
+# https://stackoverflow.com/questions/41523761/how-to-compute-auc-with-rocr-package
+# auc_ROCR <- performance(pred, measure = "auc")
+# auc_ROCR@y.values[[1]]
+
+# practice ROC curve from the plotROC package, with ggplot
+# https://cran.r-project.org/web/packages/plotROC/vignettes/examples.html
+
+# D.ex <- rbinom(200, size = 1, prob = .5)
+# M1 <- rnorm(200, mean = D.ex, sd = .65)
+# test <- data.frame(D = D.ex, D.str = c("Healthy", "Ill")[D.ex + 1], 
+#                    M1 = M1, stringsAsFactors = FALSE)
+# basicplot <- ggplot(test, aes(d = D, m = M1)) + geom_roc()
+# basicplot
+# calc_auc(basicplot)
+
+# predSubsetVector was calculated above (for the other ROC package)
+# AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
+#     aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
+# AUCplot
+#  AUCDF<-calc_auc(AUCplot)
+#  AUCDF
+# print(round(AUCDF[1, "AUC"], 3))
+# 
+#  AUCVector[j]<-AUCDF[1, "AUC"]
+# 
+# AUCplotName<-paste0("AUCplot", ObjectNameSuffixVector[j])
+# print(AUCplotName)
+# AUCDFName  <-paste0("AUCDF"  , ObjectNameSuffixVector[j])
+# print(AUCDFName)
+
+# if(Sys.info()[['user']]=="eidenale"){
+#    # Neal
+#    FolderName<-"C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
+#    # save(AUCplot, file = "C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
+#    # save(AUCDF  , file = "C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
+# }
+# if(Sys.info()[['user']]=="phpupmee"){
+#    # Paul
+#    FolderName<-"C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
+#    # save(AUCplot, file = "C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
+#    # save(AUCDF  , file = "C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
+# }
+# if(Sys.info()[['user']]=="eideobra"){
+#    # Oli
+#    FolderName<-"/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
+#    # save(AUCplot, file = "/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
+#    # save(AUCDF  , file = "/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
+# }
+
+# save(AUCplot, file = paste0(FolderName, AUCplotName, ".rdata")) 
+# save(AUCDF  , file = paste0(FolderName, AUCDFName  , ".rdata")) 
+# write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
+#           file=paste0(FolderName, "AUCbyTime.csv"), row.names = FALSE)
+
+return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
+
+
+}
+
+
+
+
 
 # rename the function so that the old name is available for the new function based on weekly totals
 AUCDailyfn <-function(FolderName, TestNE=F){
@@ -304,39 +1226,39 @@ table(SubsetVector)
 table(AreaProfilesLatestDayDF$Days_since_start>max(AreaProfilesSubsetDF$Days_since_start))
 table(AreaProfilesLatestDayDF$Days_since_start>max(AreaProfilesSubsetDF$Days_since_start)+14)
 
-# https://stats.stackexchange.com/questions/22974/how-to-find-local-peaks-valleys-in-a-series-of-data
-find_peaks <- function (x, m = 1){
-    shape <- diff(sign(diff(x, na.pad = FALSE)))
-    pks <- sapply(which(shape < 0), FUN = function(i){
-       z <- i - m + 1
-       z <- ifelse(z > 0, z, 1)
-       w <- i + m + 1
-       w <- ifelse(w < length(x), w, length(x))
-       if(all(x[c(z : i, (i + 2) : w)] <= x[i + 1])) return(i + 1) else return(numeric(0))
-    })
-     pks <- unlist(pks)
-     pks
-}
-find_peaks(c(0, 1, 2, 3, 2, 1, 0))
-find_peaks(c(0, 1, 2, 3, 3, 2, 1, 0))
-find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 0))
-
-# what happens if the first value is higher than the second
-find_peaks(c(1, 0, 1, 2, 3, 3, 3, 2, 1, 0))
-# ...not defined as a peak
-
-# ...and if the last is the highest...
-find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 4))
-# ...not defined as a peak either
-
-# https://stackoverflow.com/questions/7735647/replacing-nas-with-latest-non-na-value
-repeat.before = function(x) {   # repeats the last non NA value. Keeps leading NA
-    ind = which(!is.na(x))      # get positions of nonmissing values
-    if(is.na(x[1]))             # if it begins with a missing, add the 
-          ind = c(1,ind)        # first position to the indices
-    rep(x[ind], times = diff(   # repeat the values at these indices
-       c(ind, length(x) + 1) )) # diffing the indices + length yields how often 
-}                               # they need to be repeated
+# # https://stats.stackexchange.com/questions/22974/how-to-find-local-peaks-valleys-in-a-series-of-data
+# find_peaks <- function (x, m = 1){
+#     shape <- diff(sign(diff(x, na.pad = FALSE)))
+#     pks <- sapply(which(shape < 0), FUN = function(i){
+#        z <- i - m + 1
+#        z <- ifelse(z > 0, z, 1)
+#        w <- i + m + 1
+#        w <- ifelse(w < length(x), w, length(x))
+#        if(all(x[c(z : i, (i + 2) : w)] <= x[i + 1])) return(i + 1) else return(numeric(0))
+#     })
+#      pks <- unlist(pks)
+#      pks
+# }
+# find_peaks(c(0, 1, 2, 3, 2, 1, 0))
+# find_peaks(c(0, 1, 2, 3, 3, 2, 1, 0))
+# find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 0))
+# 
+# # what happens if the first value is higher than the second
+# find_peaks(c(1, 0, 1, 2, 3, 3, 3, 2, 1, 0))
+# # ...not defined as a peak
+# 
+# # ...and if the last is the highest...
+# find_peaks(c(0, 1, 2, 3, 3, 3, 2, 1, 4))
+# # ...not defined as a peak either
+# 
+# # https://stackoverflow.com/questions/7735647/replacing-nas-with-latest-non-na-value
+# repeat.before = function(x) {   # repeats the last non NA value. Keeps leading NA
+#     ind = which(!is.na(x))      # get positions of nonmissing values
+#     if(is.na(x[1]))             # if it begins with a missing, add the 
+#           ind = c(1,ind)        # first position to the indices
+#     rep(x[ind], times = diff(   # repeat the values at these indices
+#        c(ind, length(x) + 1) )) # diffing the indices + length yields how often 
+# }                               # they need to be repeated
 
 
 
@@ -1157,915 +2079,4 @@ return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
 
 
 }
-
-
- 
- 
-AUCfn <-function(FolderName, dir_script=dir_scripts, dir_data=dir_data_objects, dir_covar=dir_covariates, 
-                 TestNE=F){
-
-require(data.table)
-require(survival)
-require(ROCR)
-require(plotROC)
-    
-require(coxme)
-
-source(paste0(dir_script,"CLIC_Brazil_standardisation_functions.R"))
-
-fname <-  paste0(dir_data,"Brazil_BigStandard_results.RData")
-print(fname)
-    
-load(fname)
-
-
-### Merge covariates data 
-
-# preprocessing to re-route beginign of the epidemic depending on chosen area
-c_dat = as.data.table(re.route.origin(BigStandard$standardised_incidence))
-
-# Get covariates data 
-load(paste0(dir_covar,"Brazil_mun_covs.RData"))
-names(SDI)[names(SDI) == 'Area_Name'] <- 'Area'
-names(SDI)[names(SDI) == 'SDI_index'] <- 'SDI'
-SDI <- as.data.table(SDI)
-
-
-## Join data tables
-
-c_dat <- copy(c_dat[SDI,  on = "Area"])
-
-# drop if date_end is NA
-
-c_dat <- c_dat [!is.na(c_dat$date_end), ]
-
-
-## back to data frame - for back compatibility
-
-c_dat <- as.data.frame(c_dat)
-
-detach(package:data.table)
-
-
-# and add intervention timign data
-# c_dat = district.start.date.find(c_dat, BigStandard$Intervention)
-# sort(names(c_dat))
-# class(c_dat)
-AreaProfilesDF <- district.start.date.find(c_dat, BigStandard$Intervention)
-
-AreaProfilesDF$Days_since_start<-as.numeric(AreaProfilesDF$Days_since_start)
-
-summary(AreaProfilesDF$Days_since_start)
-
-# ReferenceAreaScalar<-"Guarulhos_SP"
-
-# AreaProfilesSubsetDF<-AreaProfilesDF[AreaProfilesDF$Area == ReferenceAreaScalar,]
-
-# AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Days_since_start)),]
-
-# AreaProfilesSubsetDF$standardised_casesDaily<-c(0, diff(AreaProfilesSubsetDF$standardised_cases))
-
-# head(AreaProfilesSubsetDF[,c("Days_since_start", "standardised_cases", "standardised_casesDaily")])
-
-# # peak number of daily cases
-# max(AreaProfilesSubsetDF$standardised_casesDaily)
-# max(AreaProfilesSubsetDF$Days_since_start)
-
-# latest number of cases
-# AreaProfilesSubsetDF[which.max(AreaProfilesSubsetDF$Days_since_start),"standardised_casesDaily"]
-
-# difference between peak and latest number of cases
-# max(AreaProfilesSubsetDF$standardised_casesDaily)-AreaProfilesSubsetDF[which.max(AreaProfilesSubsetDF$Days_since_start),"standardised_casesDaily"]
-
-# distribution of latest days across municipalities
-AreaProfilesLatestDayDF<-aggregate(Days_since_start ~ Area, max, data=AreaProfilesDF)
-head(AreaProfilesLatestDayDF)
-summary(AreaProfilesLatestDayDF$Days_since_start)
-# order from high to low in terms of max days
-AreaProfilesLatestDayDF<-AreaProfilesLatestDayDF[rev(order(as.numeric(AreaProfilesLatestDayDF$Days_since_start))),]
-head(AreaProfilesLatestDayDF)
-
-# ggplot(AreaProfilesDF[AreaProfilesDF$Area %in% AreaProfilesLatestDayDF[1:10, "Area"],], 
-#    aes(x = Days_since_start, y = log10(standardised_cases), group = Area))  + 
-#    geom_line(aes(color=rank(Area)))
-
-# order the main DF by area and day
-AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
-head(AreaProfilesDF[,c("Area", "Days_since_start")])
-# View(AreaProfilesDF)
-# sort(names(AreaProfilesDF))
-# View(AreaProfilesDF[AreaProfilesDF$Area=="Adamantina_SP",])
-
-AreaVector<-as.character(sort(unique(AreaProfilesDF$Area)))
-length(AreaVector)
-
-# AreaProfilesDailyDF<-data.frame(
-#    Area=character(),
-#    Days_since_start=integer(), 
-#    standardised_cases=double(),
-#    standardised_casesDaily=double(),
-#       stringsAsFactors=FALSE)
-
-AreaProfilesWeeklyDF<-data.frame(
-   Area=character(),
-   Weeks_since_start=integer(), 
-   standardised_casesWeekly=double(),
-      stringsAsFactors=FALSE)
-
-# calculate new cases by day, by differencing the cumulative cases
-# for(i in 1:length(AreaVector)){
-for(i in 1:10){
-   print(unlist(list(Area=i)))
-   AreaProfilesDailysubsetDF<-AreaProfilesDF[
-      AreaProfilesDF$Area==AreaVector[i], 
-      c("Area", "Days_since_start", "standardised_cases")]
-   AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
-   AreaProfilesDailysubsetDF$standardised_casesDaily<-c(0, diff(AreaProfilesDailysubsetDF$standardised_cases))
-   
-   if(nrow(AreaProfilesDailysubsetDF)>0){
-      # print(head(AreaProfilesDailysubsetDF))
-      StripLastPartialWeekObj<-StripLastPartialWeek(AreaProfilesDailysubsetDF$Days_since_start)
-      Days_since_startWeekTruncated<-StripLastPartialWeekObj$WeekTruncated
-      Days_since_startDayTruncated <-StripLastPartialWeekObj$DayTruncated
-      # print(dim(AreaProfilesDailysubsetDF))
-      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[
-         AreaProfilesDailysubsetDF$Days_since_start %in% Days_since_startDayTruncated,]
-      # print(dim(AreaProfilesDailysubsetDF))
-      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
-      AreaProfilesDailysubsetDF$Weeks_since_start<-Days_since_startWeekTruncated
-      # print(AreaProfilesDailysubsetDF)
-     
-      AreaProfilesWeeklysubsetDF<-as.data.frame(tapply(
-         AreaProfilesDailysubsetDF$standardised_casesDaily, 
-         AreaProfilesDailysubsetDF$Weeks_since_start, 
-         sum))
-     
-      names(AreaProfilesWeeklysubsetDF)<-"standardised_casesWeekly"
-      AreaProfilesWeeklysubsetDF$Weeks_since_start<-rownames(AreaProfilesWeeklysubsetDF)
-      AreaProfilesWeeklysubsetDF$Area             <-AreaVector[i]
-      print(head(AreaProfilesWeeklysubsetDF))
-   } 
-   # AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
-   AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
-   
-
-
-# AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
-
-# don't modify or run the following; means that the main DF to work with should be AreaProfilesWeeklyDF
-#
-# # merge back
-#   dim(AreaProfilesDF)
-# names(AreaProfilesDF)
-# AreaProfilesDF<-merge(
-#    x=AreaProfilesDF, y=AreaProfilesWeeklyDF, 
-#    by=c("Area", "Days_since_start"), all.x=F, all.y=T)
-# dim(AreaProfilesDF)
-# print(names(AreaProfilesDF))
-# AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
-# # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
-# print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
-
-
-}
-
-
-# peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesDaily)
-
-# https://stats.stackexchange.com/questions/353692/modelling-recurrent-events-using-cox-regression-in-r
-
-# AreaRecordDF<-data.frame(
-#    Area=character(),
-#    Days_since_start=integer(), 
-#    DayYesterday    =integer(), 
-#    status          =integer(),
-#    RecordAtStartOfDay         =double(),
-#    standardised_casesDaily    =double(),
-#    standardised_casesYesterday=double(),
-#       stringsAsFactors=FALSE) 
-
-AreaRecordDF<-data.frame(
-   Area=character(),
-   Weeks_since_start=integer(), 
-   WeekLastWeek     =integer(), 
-   status           =integer(),
-   RecordAtStartOfWeek       =double(),
-   standardised_casesWeekly  =double(),
-   standardised_casesLastWeek=double(),
-   GapToRecord               =double(),
-      stringsAsFactors=FALSE) 
-
-for(i in 1:length(AreaVector)){
-# for(i in 1:5){
-   
-   print(i)
-
-   # AreaProfilesSubsetDF<-AreaProfilesDF[AreaProfilesDF$Area == AreaVector[i],]
-   # AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Days_since_start)),]
-   AreaProfilesSubsetDF<-AreaProfilesWeeklyDF[AreaProfilesWeeklyDF$Area == AreaVector[i],]
-   AreaProfilesSubsetDF<-AreaProfilesSubsetDF[order(as.numeric(AreaProfilesSubsetDF$Weeks_since_start)),]
-
-   peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesWeekly)
-   # print("peaksVector:")
-   # print(peaksVector)
-
-   if(length(peaksVector)>0){
-
-      # print("AreaProfilesSubsetDF:")
-      # print(AreaProfilesSubsetDF)
-      AreaProfilesPeakDF<-AreaProfilesSubsetDF[peaksVector,c("Weeks_since_start", "standardised_casesWeekly")]
-      # print("AreaProfilesPeakDF:")
-      # print(AreaProfilesPeakDF)
-      # print(head(AreaProfilesPeakDF$standardised_casesWeekly))
-      # AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesWeekly))
-      print(summary(AreaProfilesPeakDF$diff))
-
-      while(any(AreaProfilesPeakDF$diff<0)){
-         AreaProfilesPeakDF     <-AreaProfilesPeakDF[AreaProfilesPeakDF$diff>=0,]
-         AreaProfilesPeakDF$diff<-c(999, diff(AreaProfilesPeakDF$standardised_casesWeekly))
-      }
-      AreaProfilesPeakDF$peak<-T
-
-   # require at least two peaks
-   if(I(dim(AreaProfilesPeakDF)[1])>=2){
-
-      AreaProfilesSubsetDF<-merge(
-         x=AreaProfilesSubsetDF, 
-         y=AreaProfilesPeakDF[,c("Weeks_since_start", "peak")], 
-         by="Weeks_since_start", all.x=T, all.y=F)
-
-      AreaProfilesSubsetDF$CurrentRecord<-ifelse(
-         AreaProfilesSubsetDF$peak, 
-         AreaProfilesSubsetDF$standardised_casesWeekly, NA
-         )
-
-      AreaProfilesSubsetDF$RecordAtStartOfWeek<-repeat.before(AreaProfilesSubsetDF$CurrentRecord)
-      AreaProfilesSubsetDF$RecordAtStartOfWeek<-c(
-         NA, 
-         AreaProfilesSubsetDF$RecordAtStartOfWeek[1:I(length(AreaProfilesSubsetDF$RecordAtStartOfWeek)-1)]
-         )
-
-      AreaProfilesSubsetDF$standardised_casesLastWeek<-c(
-         NA, 
-         AreaProfilesSubsetDF$standardised_casesWeekly[1:I(length(AreaProfilesSubsetDF$standardised_casesWeekly)-1)]
-         )
-      
-      AreaProfilesSubsetDF$WeekLastWeek<-c(
-         NA, 
-         AreaProfilesSubsetDF$Weeks_since_start[1:I(length(AreaProfilesSubsetDF$Weeks_since_start)-1)]
-         )
-
-      AreaProfilesSubsetDF$GapToRecord<-AreaProfilesSubsetDF$RecordAtStartOfWeek - AreaProfilesSubsetDF$standardised_casesLastWeek
-
-      AreaProfilesSubsetDF$status<-ifelse(
-         is.na(AreaProfilesSubsetDF$peak), 0, as.numeric(AreaProfilesSubsetDF$peak)
-         )
-      
-      # AreaProfilesSubsetDF$event <-NA
-      
-      print(AreaProfilesSubsetDF[,1:10])
-      # print(names(AreaProfilesSubsetDF))
-      
-      AreaRecordDF<-rbind(AreaRecordDF,
-            AreaProfilesSubsetDF[,c("Area", "Weeks_since_start", "WeekLastWeek", "status",
-               "RecordAtStartOfWeek", 
-               "standardised_casesWeekly", "standardised_casesLastWeek",
-               "GapToRecord")])
-      }
-   }
-}
-
-AreaRecordDF$State<-substrRight(as.character(AreaRecordDF$Area), 2)   
-
-# aggregate candidate predictor variables from the original DF, and merge in
-AreaProfilesAggDF<-aggregate(cbind(popden, SDI) ~ Area, mean, na.rm=T, data=AreaProfilesDF) 
-head(AreaProfilesAggDF) 
-
-dim(AreaRecordDF) 
-AreaRecordDF<-merge(x=AreaRecordDF, y=AreaProfilesAggDF, all.x=T, all.y=F, by="Area") 
-dim(AreaRecordDF) 
-
-class(AreaRecordDF$Area) 
-AreaRecordDF$Area<-as.character(AreaRecordDF$Area)
-class(AreaRecordDF$Area)
-table(is.na(AreaRecordDF$Area))
-
-
-# lagScalar<-2
-
-# print("Field names in AreaProfilesDF:")
-# print(names(AreaProfilesDF))
-
-AreaProfilesWeeklyDF$Weeks_since_start<-as.numeric(AreaProfilesWeeklyDF$Weeks_since_start)
-
-LagMaxScalar<-4 # in the previous version it was 7 (days)
-
-for(lagScalar in 2:LagMaxScalar){
-   # print(unlist(list(lagScalar=lagScalar)))
-   # print(   head(AreaProfilesWeeklyDF))
-   # print(summary(AreaProfilesWeeklyDF))
-   AreaProfilesWeeklyDF[,paste0("Week", lagScalar)]<-AreaProfilesWeeklyDF$Weeks_since_start+lagScalar
-   AreaProfilesLagDF<-AreaProfilesWeeklyDF[,c("Area", paste0("Week", lagScalar), "standardised_casesWeekly")]
-   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)==paste0("Week", lagScalar), "Weeks_since_start", names(AreaProfilesLagDF))
-   names(AreaProfilesLagDF)<-ifelse(names(AreaProfilesLagDF)=="standardised_casesWeekly", paste0("standardised_casesWeekly", lagScalar), names(AreaProfilesLagDF))
-
-   # dim(AreaRecordDF)
-   AreaRecordDF<-merge(x=AreaRecordDF, y=AreaProfilesLagDF, 
-                       by=c("Area", "Weeks_since_start"), all.x=T, all.y=F)
-   # dim(AreaRecordDF)
-
-   AreaRecordDF[,paste0("GapToRecord", lagScalar)]<-
-      AreaRecordDF[,"RecordAtStartOfWeek"] - AreaRecordDF[,paste0("standardised_casesWeekly", lagScalar)]
-}
-
-
-CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
-                !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
-                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4)
-table(CompleteSubset)
-
-# AreaCoxphNull<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     1 + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-
-AreaCoxphNull<-coxph(Surv(as.numeric(WeekLastWeek),as.numeric(Weeks_since_start),as.numeric(status))~
-                    1, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-print("Fitted first cluster model.")
-
-# AreaCoxphNull<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~
-#                     (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-# print("Fitted first random effect model.")
-
-summary(AreaCoxphNull)
-
-
-table(is.na(AreaRecordDF$State))
-
-print("dim(AreaRecordDF) before:")
-print(dim(AreaRecordDF))
-
-# print("### test to remove rows where  DayYesterday = NA")
-# AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$DayYesterday)) ,]
-print("### test to remove rows where  WeekLastWeek = NA")
-AreaRecordDF <- AreaRecordDF[!(is.na(AreaRecordDF$WeekLastWeek)) ,]
-
-print("dim(AreaRecordDF) after:")
-print(dim(AreaRecordDF))
-
-# recalculate to make it same length as new DF
-CompleteSubset<-!is.na(AreaRecordDF$Area)         & !is.na(AreaRecordDF$State)        & !is.na(AreaRecordDF$popden) & 
-                !is.na(AreaRecordDF$SDI)          & !is.na(AreaRecordDF$GapToRecord)  & !is.na(AreaRecordDF$GapToRecord2) & 
-                !is.na(AreaRecordDF$GapToRecord3) & !is.na(AreaRecordDF$GapToRecord4)
-
-print("length(CompleteSubset):")
-print(length(CompleteSubset))
-
-if(TestNE){
-   print("table(CompleteSubset):")
-   print(table(CompleteSubset))
-   print("Subsetting to NE region for testing purposes...")
-   CompleteSubset<-CompleteSubset & 
-      AreaRecordDF$State %in% c("AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE")
-   print("table(CompleteSubset):")
-   print(table(CompleteSubset))
-}
-
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     as.factor(State) + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     as.factor(State), cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     as.factor(State) + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-# summary(AreaCoxph)
-
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     popden + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     popden, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     popden + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-# summary(AreaCoxph)
-
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     SDI    + frailty(Area),method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     SDI, cluster(Area), method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-#                     SDI + (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-# summary(AreaCoxph)
-
-# the following does not work for some reason
-# anova(AreaCoxphNull, AreaCoxph)
-
-# plot(survfit(AreaCoxph))
-# 
-# plot(survfit(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ as.factor(State), 
-#              data=AreaRecordDF))
-
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status)~ 1 + frailty(Area),method="breslow", 
-#                  data=AreaRecordDF, subset=CompleteSubset)
-
-AreaCoxph<-coxph(Surv(as.numeric(WeekLastWeek),as.numeric(Weeks_since_start),
-                 status)~ 1, cluster(Area),method="breslow",
-                 data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status) ~ (1|Area), data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph)
-
-}
-junk<-function(){
-
-
-# AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status)~ GapToRecord + GapToRecord2 + frailty(Area),method="breslow", 
-#                  data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph2<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 status)~ GapToRecord + GapToRecord2, cluster(Area), method="breslow",
-                 data=AreaRecordDF, subset=CompleteSubset)
-# AreaCoxph2<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  status)~ GapToRecord + GapToRecord2 + (1|Area), 
-#                  data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph2)
-
-# anova(AreaCoxph2, AreaCoxph)
-# anova(AreaCoxph, AreaCoxph2)
-
-# https://stackoverflow.com/questions/58588833/why-do-i-get-an-error-in-anova-test-on-cox-models-in-r
-
-# anovaCox<-function(model1, model2){
-#    Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
-#    Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
-#    pval = pchisq(Chisq, Df, lower.tail=F)
-#    print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
-# }
-# anovaCox(AreaCoxph, AreaCoxph2)
-# print("First use of anovaCox().")
-
-anovaCox<-function(model1, model2, Wald=F){
-   if(  "coxme" %in% class(model1) &   "coxme" %in% class(model2)){
-      # coxme models
-      # from coxme manual:
-      # "The likelihood for a mixed effects Cox model can be viewed in two ways: the ordinarly partial
-      # likelihood, where the random effects act only as a penalty or constraint, or a partial likelihood
-      # where the random effect has been integrated out. Both are valid."
-      #
-      # opt for "Integrated" likelihood because the DF are easier to understand
-      logLik1<-model2$loglik["Integrated"]
-      logLik2<-model1$loglik["Integrated"]
-      Chisq = abs(as.numeric(logLik2 - logLik1) * 2)
-      
-      Df = model2$df[1] - model1$df[1]
-      pval = pchisq(Chisq, Df, lower.tail=F)
-      print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
-   }else{
-   if(! "coxme" %in% class(model1) & ! "coxme" %in% class(model2)){
-      # assume they are usual cox models
-      if(Wald){
-         Df    = abs(summary(model2)$waldtest["df"]   - summary(model1)$waldtest["df"])
-         Chisq = abs(summary(model2)$waldtest["test"] - summary(model1)$waldtest["test"])
-         pval = pchisq(Chisq, Df, lower.tail=F)
-         print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
-      }else{
-         Df = sum(anova(model2)$Df, na.rm = T) - sum(anova(model1)$Df, na.rm = T)
-         Chisq = abs(as.numeric(logLik(model2) - logLik(model1)) * 2)
-         pval = pchisq(Chisq, Df, lower.tail=F)
-         print(unlist(list(Chisq=Chisq, Df=Df, pval=pval)))
-      }
-   }else{
-      stop("Models of different classes have been passed to the anovaCox function.")
-   }
-   }
-}
-
-
-# quit(save="ask")
-
-if(Sys.info()[['user']]=="eidenale"){
-   # https://stackoverflow.com/questions/49013427/r-saving-image-within-function-is-not-loading
-   # save.image(file = "C:\\Users\\eidenale\\Downloads\\debug.RData")
-   save(
-      list = ls(all.names = TRUE), 
-      file = "C:\\Users\\eidenale\\Downloads\\debug.RData", 
-      envir =  environment())
-   # load("C:\\Users\\eidenale\\Downloads\\debug.RData")
-}
-
-print("summary(AreaCoxph):")
-print(summary(AreaCoxph))
-# AreaCoxph$loglik
-print("summary(AreaCoxph2):")
-print(summary(AreaCoxph2))
-# class(summary(AreaCoxph2))
-
-# https://stackoverflow.com/questions/19226816/how-can-i-view-the-source-code-for-a-function
-# methods(anova)
-# getAnywhere(anova.coxme)
-# getAnywhere(anova.coxmelist)
-# require(coxme)
-
-# https://www.python2.net/questions-175391.htm
-
-# anova(AreaCoxph, AreaCoxph2)
-anovaCox(AreaCoxph, AreaCoxph2, Wald=T)
-# print("First use of anovaCox on coxme objects has been done.")
-print("First use of anovaCox has been done.")
-
-
-# AreaCoxph7<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 + frailty(Area),
-#                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph7<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),as.numeric(status))~ 
-                 GapToRecord + GapToRecord2 + GapToRecord3 + GapToRecord4 + GapToRecord5 + GapToRecord6 + GapToRecord7 +  (1|Area), 
-                 data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph7)
-anovaCox(AreaCoxph2, AreaCoxph7)
-
-# AreaCoxph167<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + frailty(Area),
-#                  method="breslow", data=AreaRecordDF, subset=CompleteSubset)
-AreaCoxph167<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + (1|Area),
-                 data=AreaRecordDF, subset=CompleteSubset)
-summary(AreaCoxph167)
-anovaCox(AreaCoxph167, AreaCoxph7)
-
-# keep those days but no longer use the subset
-
-
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord2 + GapToRecord7 + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
-#
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord7 + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
-
-# AreaCoxphState<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxphState)
-#
-# AreaCoxphPopden<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + popden + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxphPopden)
-#
-# AreaCoxphSDI<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + SDI + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxphSDI)
-#
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
-
-AreaCoxphFormula<-AreaCoxph$formula
-AreaCoxphFormula
-
-# comment out the following two because they seem to be overwritten immediately
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord2 + as.factor(State) + SDI + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
-# 
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord2 + SDI + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-# summary(AreaCoxph)
- 
-# re-do the following one with coxme
-# AreaCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + frailty(Area),
-#                  method="breslow", data=AreaRecordDF)
-AreaCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + (1|Area), data=AreaRecordDF)
-summary(AreaCoxph)
-
-# make new dataset to predict 30 days ahead
-# pick out latest record for each municipality
-
-AreaRecordMaxDF<-aggregate(Days_since_start ~ Area, max, data=AreaRecordDF)
-# head(AreaRecordMaxDF)
-dim(AreaRecordMaxDF)
-
-AreaRecordPredictDF<-merge(
-   x=AreaRecordDF[,c("Area", "Days_since_start", "status", 
-                     "standardised_casesDaily",  "standardised_casesYesterday",
-                     "RecordAtStartOfDay", "State", "SDI",
-                     paste0("standardised_casesDaily", 2:6))], 
-   y=AreaRecordMaxDF, all.x=F, all.y=T, 
-   by=c("Area", "Days_since_start"))
-dim(AreaRecordPredictDF)
-
-table(AreaRecordPredictDF$status)
-
-# start day for prediction is last day of existing data
-# this is a new field, not merged in from "AreaRecordDF"
-AreaRecordPredictDF$DayYesterday      <-AreaRecordPredictDF$Days_since_start
-
-AreaRecordPredictDF$Days_since_start  <-AreaRecordPredictDF$DayYesterday+30
-AreaRecordPredictDF$RecordAtStartOfDay<-ifelse(
-   as.logical(AreaRecordPredictDF$status), 
-              AreaRecordPredictDF$standardised_casesDaily, 
-              AreaRecordPredictDF$RecordAtStartOfDay)
-
-#now shuffle the case-by-day variables by one day
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesDaily6",
-                               "standardised_casesDaily7", names(AreaRecordPredictDF))
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesDaily5",
-                               "standardised_casesDaily6", names(AreaRecordPredictDF))
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesDaily4",
-                               "standardised_casesDaily5", names(AreaRecordPredictDF))
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesDaily3",
-                               "standardised_casesDaily4", names(AreaRecordPredictDF))
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesDaily2",
-                               "standardised_casesDaily3", names(AreaRecordPredictDF))
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesYesterday",
-                               "standardised_casesDaily2", names(AreaRecordPredictDF))
-names(AreaRecordPredictDF)<-ifelse(
-   names(AreaRecordPredictDF)=="standardised_casesDaily",
-                               "standardised_casesYesterday", names(AreaRecordPredictDF))
-# AreaRecordPredictDF$standardised_casesYesterday<-AreaRecordPredictDF$standardised_casesDaily
-
-sort(names(AreaRecordPredictDF))
-
-AreaRecordPredictDF$GapToRecord <-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesYesterday
-AreaRecordPredictDF$GapToRecord2<-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesDaily2
-AreaRecordPredictDF$GapToRecord3<-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesDaily3
-AreaRecordPredictDF$GapToRecord4<-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesDaily4
-AreaRecordPredictDF$GapToRecord5<-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesDaily5
-AreaRecordPredictDF$GapToRecord6<-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesDaily6
-AreaRecordPredictDF$GapToRecord7<-AreaRecordPredictDF$RecordAtStartOfDay-AreaRecordPredictDF$standardised_casesDaily7
-
-SubsetNameVector<-c("Area", "status", "DayYesterday", "Days_since_start", "RecordAtStartOfDay", "standardised_casesYesterday", 
-   paste0("GapToRecord", c("", as.character(2:7))), "State", "SDI")
-SubsetNameVector
-AreaRecordPredictDF<-AreaRecordPredictDF[,SubsetNameVector]
-
-AreaRecordPredictDF[AreaRecordPredictDF$Area=="São Caetano do Sul_SP",]
-
-AreaRecordPredictDF$Predict<-predict(AreaCoxph, newdata=AreaRecordPredictDF, type ="expected")
-# head(AreaRecordPredictDF$Predict)
-# prob of event, which is 1-survival prob
-AreaRecordPredictDF$PredictProb<-1-exp(-AreaRecordPredictDF$Predict)
-
-# plot(x=AreaRecordPredictDF$Days_since_start, y=AreaRecordPredictDF$PredictProb)
-
-# merge back in the x and y
-
-# sort(names(AreaProfilesDF))
-
-XDF<-aggregate(X ~ Area, mean, data=AreaProfilesDF, na.rm=T)
-YDF<-aggregate(Y ~ Area, mean, data=AreaProfilesDF, na.rm=T)
-
-AreaRecordPredictDF<-merge(x=AreaRecordPredictDF, y=XDF, by="Area", all.x=T, all.y=F)   
-AreaRecordPredictDF<-merge(x=AreaRecordPredictDF, y=YDF, by="Area", all.x=T, all.y=F)   
-
-table(is.na(AreaRecordPredictDF$PredictProb))
-
-# eqscplot(AreaRecordPredictDF$X, AreaRecordPredictDF$Y, 
-#      col=ifelse(AreaRecordPredictDF$PredictProb<0.25, "steelblue1",
-#          ifelse(AreaRecordPredictDF$PredictProb<0.50, "steelblue2",
-#          ifelse(AreaRecordPredictDF$PredictProb<0.75, "steelblue3", "steelblue4"))), 
-#      pch=20, cex=0.5)
-
-saveRDS(AreaRecordPredictDF, file = (paste0(dir_peak_data,"Peak.rds")))
-
-# evaluate performance by fitting a similar model to data with the last 30 days removed
-names(AreaRecordMaxDF)<-ifelse(
-   names(AreaRecordMaxDF)=="Days_since_start", "Days_since_startMax", names(AreaRecordMaxDF))
-names(AreaRecordMaxDF)
-
-dim(AreaRecordDF)
-# make a new DF which will be subsetted for the training DF and further down for the test DF
-AreaRecordTestTrainingDF<-merge(
-   x=AreaRecordDF[,c("Area", "DayYesterday", "Days_since_start", "status", 
-                     "standardised_casesDaily", "standardised_casesYesterday",  
-                     "RecordAtStartOfDay", "GapToRecord", "GapToRecord6", "GapToRecord7", "State", "SDI", 
-                     paste0("standardised_casesDaily", 2:6))], 
-   y=AreaRecordMaxDF, all.x=T, all.y=F, 
-   by=c("Area"))
-dim(AreaRecordTestTrainingDF)
-names(AreaRecordTestTrainingDF)
-AreaRecordTrainingDF<-AreaRecordTestTrainingDF[
-   AreaRecordTestTrainingDF$Days_since_start-AreaRecordTestTrainingDF$Days_since_startMax<=I(-30),]
-dim(AreaRecordTrainingDF)
-# AreaRecordTrainingDF[AreaRecordTrainingDF$Area=="São Caetano do Sul_SP",]
-
-# AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
-#                  method="breslow",
-#                  data=AreaRecordTrainingDF)
-AreaTrainingCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + (1|Area),
-                 data=AreaRecordTrainingDF)
-
-# re-use the formula from above
-# AreaTrainingCoxph<-coxph(AreaCoxphFormula,
-#                  method="breslow",
-#                  data=AreaRecordTrainingDF)
-# summary(AreaTrainingCoxph)
-
-# make the predictions for the next 30 days as if they were unknown
-AreaRecordTrainingMaxDF<-aggregate(Days_since_start ~ Area, max, data=AreaRecordTrainingDF)
-
-AreaRecordTrainingPredictDF<-merge(
-   x=AreaRecordTrainingDF[,c(
-      "Area", "Days_since_start", "status", 
-      "standardised_casesDaily", "standardised_casesYesterday",
-      "RecordAtStartOfDay", "State", "SDI",
-                     paste0("standardised_casesDaily", 2:6))], 
-   y=AreaRecordTrainingMaxDF, all.x=F, all.y=T, 
-   by=c("Area", "Days_since_start"))
-dim(AreaRecordTrainingPredictDF)
-
-
-# make the prediction dataset along the lines done already for the genuinely unknown data
-AreaRecordTrainingPredictDF$DayYesterday      <-AreaRecordTrainingPredictDF$Days_since_start
-AreaRecordTrainingPredictDF$Days_since_start  <-AreaRecordTrainingPredictDF$DayYesterday+30
-AreaRecordTrainingPredictDF$RecordAtStartOfDay<-ifelse(
-   as.logical(AreaRecordTrainingPredictDF$status), 
-              AreaRecordTrainingPredictDF$standardised_casesDaily, 
-              AreaRecordTrainingPredictDF$RecordAtStartOfDay)
-
-# AreaRecordTrainingPredictDF$standardised_casesYesterday<-AreaRecordTrainingPredictDF$standardised_casesDaily
-# AreaRecordTrainingPredictDF$GapToRecord                <-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesYesterday
-
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily6",
-                               "standardised_casesDaily7", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily5",
-                               "standardised_casesDaily6", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily4",
-                               "standardised_casesDaily5", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily3",
-                               "standardised_casesDaily4", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily2",
-                               "standardised_casesDaily3", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesYesterday",
-                               "standardised_casesDaily2", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily",
-                               "standardised_casesYesterday", names(AreaRecordTrainingPredictDF))
-
-AreaRecordTrainingPredictDF$GapToRecord <-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesYesterday
-AreaRecordTrainingPredictDF$GapToRecord2<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily2
-AreaRecordTrainingPredictDF$GapToRecord3<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily3
-AreaRecordTrainingPredictDF$GapToRecord4<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily4
-AreaRecordTrainingPredictDF$GapToRecord5<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily5
-AreaRecordTrainingPredictDF$GapToRecord6<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily6
-AreaRecordTrainingPredictDF$GapToRecord7<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily7
-
-
-# AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,c(
-#    "Area", "status", "DayYesterday", "Days_since_start", "RecordAtStartOfDay", "standardised_casesYesterday", "GapToRecord")]
-
-# SubsetNameVector was defined above
-AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,SubsetNameVector]
-
-# AreaRecordTrainingPredictDF[AreaRecordTrainingPredictDF$Area=="São Caetano do Sul_SP",]
-
-AreaRecordTrainingPredictDF$Predict<-predict(AreaTrainingCoxph, newdata=AreaRecordTrainingPredictDF, type ="expected")
-# prob of event, which is 1-survival prob
-AreaRecordTrainingPredictDF$PredictProb<-1-exp(-AreaRecordTrainingPredictDF$Predict)
-# hist(AreaRecordTrainingPredictDF$PredictProb)
-# plot(x=AreaRecordTrainingPredictDF$Days_since_start, y=AreaRecordTrainingPredictDF$PredictProb)
-summary(AreaRecordTrainingPredictDF$Predict)
-
-# AreaRecordTrainingPredictDF[AreaRecordTrainingPredictDF$Area=="São Caetano do Sul_SP",]
-
-# check there is one record per area
-table(table(AreaRecordTrainingPredictDF$Area))
-# View(AreaRecordTrainingPredictDF)
-
-# make a test dataset out of the remaining records in the source data
-AreaRecordTestDF<-AreaRecordTestTrainingDF[
-   AreaRecordTestTrainingDF$Days_since_start-AreaRecordTestTrainingDF$Days_since_startMax>I(-30),]
-dim(AreaRecordTestDF)
-# AreaRecordTestDF[AreaRecordTestDF$Area=="São Caetano do Sul_SP",]
-
-AreaRecordTestDF<-aggregate(status ~ Area, sum, data=AreaRecordTestDF, na.rm=T)
-names(AreaRecordTestDF)<-ifelse(names(AreaRecordTestDF)=="status", "EventsObserved", names(AreaRecordTestDF))
- # head(AreaRecordTestDF)
-table(AreaRecordTestDF$EventsObserved)
-# AreaRecordTestDF[AreaRecordTestDF$Area=="São Caetano do Sul_SP",]
-
-# merge into the TrainingDF
-dim(AreaRecordTrainingPredictDF)
-AreaRecordTrainingPredictDF<-merge(
-   x=AreaRecordTrainingPredictDF, 
-   y=AreaRecordTestDF, all.x = T, all.y = F, by="Area")
-dim(AreaRecordTrainingPredictDF)
-
-# plot(x=AreaRecordTrainingPredictDF$EventsObserved, 
-#      y=AreaRecordTrainingPredictDF$Predict)
-
-# cor(x=AreaRecordTrainingPredictDF$EventsObserved, y=AreaRecordTrainingPredictDF$Predict, 
-#     use="complete.obs")
-
-# names(AreaRecordTrainingPredictDF)
-
-par(mfrow=c(1,1))
-
-# https://afit-r.github.io/histograms
-# ggplot(AreaRecordTrainingPredictDF, aes(x=PredictProb)) + 
-#    geom_histogram() +
-#         facet_grid(sign(EventsObserved) ~ .)
-
-# practice ROC curve
-# https://cran.r-project.org/web/packages/ROCR/ROCR.pdf
-# data(ROCR.simple)
-# head(ROCR.simple)
-# names(ROCR.simple)
-# class(ROCR.simple)
-# pred <- prediction( ROCR.simple$predictions, ROCR.simple$labels)
-# pred
-# perf <- performance(pred,"tpr","fpr")
-# perf
-# plot(perf)
-# plot(perf, colorize=TRUE)
-# # ...fairly straightforward once you know what argument values to pass to performance()
-
-# predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
-# pred <- prediction(
-#    predictions=     AreaRecordTrainingPredictDF$PredictProb[predSubsetVector],
-#         labels=sign(AreaRecordTrainingPredictDF$EventsObserved[predSubsetVector]))
-# perf <- performance(pred,"tpr","fpr")
-# plot(perf, colorize=TRUE)
-
-# https://stackoverflow.com/questions/41523761/how-to-compute-auc-with-rocr-package
-# auc_ROCR <- performance(pred, measure = "auc")
-# auc_ROCR@y.values[[1]]
-
-# practice ROC curve from the plotROC package, with ggplot
-# https://cran.r-project.org/web/packages/plotROC/vignettes/examples.html
-
-# D.ex <- rbinom(200, size = 1, prob = .5)
-# M1 <- rnorm(200, mean = D.ex, sd = .65)
-# test <- data.frame(D = D.ex, D.str = c("Healthy", "Ill")[D.ex + 1], 
-#                    M1 = M1, stringsAsFactors = FALSE)
-# basicplot <- ggplot(test, aes(d = D, m = M1)) + geom_roc()
-# basicplot
-# calc_auc(basicplot)
-
-# predSubsetVector was calculated above (for the other ROC package)
-# AUCplot <- ggplot(AreaRecordTrainingPredictDF[predSubsetVector,],
-#     aes(d=sign(EventsObserved), m=PredictProb)) + geom_roc()
-# AUCplot
-#  AUCDF<-calc_auc(AUCplot)
-#  AUCDF
-# print(round(AUCDF[1, "AUC"], 3))
-# 
-#  AUCVector[j]<-AUCDF[1, "AUC"]
-# 
-# AUCplotName<-paste0("AUCplot", ObjectNameSuffixVector[j])
-# print(AUCplotName)
-# AUCDFName  <-paste0("AUCDF"  , ObjectNameSuffixVector[j])
-# print(AUCDFName)
-
-# if(Sys.info()[['user']]=="eidenale"){
-#    # Neal
-#    FolderName<-"C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
-#    # save(AUCplot, file = "C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
-#    # save(AUCDF  , file = "C:/Users/eidenale/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
-# }
-# if(Sys.info()[['user']]=="phpupmee"){
-#    # Paul
-#    FolderName<-"C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
-#    # save(AUCplot, file = "C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
-#    # save(AUCDF  , file = "C:/CADDE_dropbox/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
-# }
-# if(Sys.info()[['user']]=="eideobra"){
-#    # Oli
-#    FolderName<-"/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/"
-#    # save(AUCplot, file = "/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCplot.rdata") 
-#    # save(AUCDF  , file = "/Users/eideobra/Dropbox/COVID_cities/CC_Intermediate_data_obj/AUCDF.rdata") 
-# }
-
-# save(AUCplot, file = paste0(FolderName, AUCplotName, ".rdata")) 
-# save(AUCDF  , file = paste0(FolderName, AUCDFName  , ".rdata")) 
-# write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
-#           file=paste0(FolderName, "AUCbyTime.csv"), row.names = FALSE)
-
-return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
-
-
-}
-
-
-
 
