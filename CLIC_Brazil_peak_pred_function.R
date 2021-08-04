@@ -129,7 +129,7 @@ anovaCox<-function(model1, model2, Wald=F){
  
  
 AUCfn <-function(FolderName, dir_script=dir_scripts, dir_data=dir_data_objects, dir_covar=dir_covariates, 
-                 TestNE=F){
+                 TestNE=F, verbose=F){
 
 require(data.table)
 require(survival)
@@ -754,9 +754,6 @@ AreaRecordPredictDF$Predict<-predict(AreaCoxph, newdata=AreaRecordPredictDF, typ
 # prob of event, which is 1-survival prob
 AreaRecordPredictDF$PredictProb<-1-exp(-AreaRecordPredictDF$Predict)
 
-}
-junk<-function(){
-
 # plot(x=AreaRecordPredictDF$Days_since_start, y=AreaRecordPredictDF$PredictProb)
 
 # merge back in the x and y
@@ -768,6 +765,8 @@ YDF<-aggregate(Y ~ Area, mean, data=AreaProfilesDF, na.rm=T)
 
 AreaRecordPredictDF<-merge(x=AreaRecordPredictDF, y=XDF, by="Area", all.x=T, all.y=F)   
 AreaRecordPredictDF<-merge(x=AreaRecordPredictDF, y=YDF, by="Area", all.x=T, all.y=F)   
+
+print("Merged X/Y coords to AreaRecordPredictDF.")
 
 table(is.na(AreaRecordPredictDF$PredictProb))
 
@@ -781,93 +780,145 @@ saveRDS(AreaRecordPredictDF, file = (paste0(dir_peak_data,"Peak.rds")))
 
 # evaluate performance by fitting a similar model to data with the last 30 days removed
 names(AreaRecordMaxDF)<-ifelse(
-   names(AreaRecordMaxDF)=="Days_since_start", "Days_since_startMax", names(AreaRecordMaxDF))
+   names(AreaRecordMaxDF)=="Weeks_since_start", "Weeks_since_startMax", names(AreaRecordMaxDF))
 names(AreaRecordMaxDF)
 
 dim(AreaRecordDF)
 # make a new DF which will be subsetted for the training DF and further down for the test DF
 AreaRecordTestTrainingDF<-merge(
-   x=AreaRecordDF[,c("Area", "DayYesterday", "Days_since_start", "status", 
-                     "standardised_casesDaily", "standardised_casesYesterday",  
-                     "RecordAtStartOfDay", "GapToRecord", "GapToRecord6", "GapToRecord7", "State", "SDI", 
-                     paste0("standardised_casesDaily", 2:6))], 
+   x=AreaRecordDF[,c("Area", "WeekLastWeek", "Weeks_since_start", "status", 
+                     "standardised_casesWeekly", "standardised_casesLastWeek",  
+                     "RecordAtStartOfWeek", 
+                     "GapToRecord", "GapToRecord2", "GapToRecord3",  "GapToRecord4", 
+                     "State", "SDI", "popden",
+                     paste0("standardised_casesWeekly", 2:4))], 
    y=AreaRecordMaxDF, all.x=T, all.y=F, 
    by=c("Area"))
-dim(AreaRecordTestTrainingDF)
+  dim(AreaRecordTestTrainingDF)
 names(AreaRecordTestTrainingDF)
 AreaRecordTrainingDF<-AreaRecordTestTrainingDF[
-   AreaRecordTestTrainingDF$Days_since_start-AreaRecordTestTrainingDF$Days_since_startMax<=I(-30),]
+   AreaRecordTestTrainingDF$Weeks_since_start-AreaRecordTestTrainingDF$Weeks_since_startMax<=I(-4),]
 dim(AreaRecordTrainingDF)
 # AreaRecordTrainingDF[AreaRecordTrainingDF$Area=="São Caetano do Sul_SP",]
 
-# AreaTrainingCoxph<-coxph(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + frailty(Area),
-#                  method="breslow",
+print("Merged max week of followup in making AreaRecordTestTrainingDF.")
+
+# AreaTrainingCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
+#                  as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + (1|Area),
 #                  data=AreaRecordTrainingDF)
-AreaTrainingCoxph<-coxme(Surv(as.numeric(DayYesterday),as.numeric(Days_since_start),
-                 as.numeric(status))~ GapToRecord + GapToRecord6 + GapToRecord7 + as.factor(State) + SDI + (1|Area),
-                 data=AreaRecordTrainingDF)
 
 # re-use the formula from above
-# AreaTrainingCoxph<-coxph(AreaCoxphFormula,
-#                  method="breslow",
-#                  data=AreaRecordTrainingDF)
-# summary(AreaTrainingCoxph)
+AreaTrainingCoxph<-coxph(AreaCoxphFormula,
+                 method="breslow",
+                 data=AreaRecordTrainingDF)
+if(verbose){
+   print("summary(AreaTrainingCoxph):")
+   print( summary(AreaTrainingCoxph))
+}
 
-# make the predictions for the next 30 days as if they were unknown
-AreaRecordTrainingMaxDF<-aggregate(Days_since_start ~ Area, max, data=AreaRecordTrainingDF)
+# make the predictions for the next 4 weeks as if they were unknown
+AreaRecordTrainingMaxDF<-aggregate(Weeks_since_start ~ Area, max, data=AreaRecordTrainingDF)
+
+if(verbose){
+   print("names(AreaRecordTrainingDF):")
+   print( names(AreaRecordTrainingDF))
+   print("names(AreaRecordTrainingMaxDF):")
+   print( names(AreaRecordTrainingMaxDF))
+}
+
+#  [1] "names(AreaRecordTrainingDF):"
+#  [1] "Area"                       "WeekLastWeek"               "Weeks_since_start"         
+#  [4] "status"                     "standardised_casesWeekly"   "standardised_casesLastWeek"
+#  [7] "RecordAtStartOfWeek"        "GapToRecord"                "GapToRecord2"              
+# [10] "GapToRecord3"               "GapToRecord4"               "State"                     
+# [13] "SDI"                        "popden"                     "standardised_casesWeekly2" 
+# [16] "standardised_casesWeekly3"  "standardised_casesWeekly4"  "Weeks_since_startMax"      
+
+NamesVector<-c(
+      "Area", "Weeks_since_start", "status", 
+      "standardised_casesWeekly", "standardised_casesLastWeek",
+      "RecordAtStartOfWeek", "State", "SDI",
+                     paste0("standardised_casesWeekly", 2:4))
+NamesVectorInDFNames<-NamesVector %in% names(AreaRecordTrainingDF)
+if(any(!NamesVectorInDFNames)){
+   print("Error: following name(s) to be merged are not in AreaRecordTrainingDF")
+   print(NamesVector[!NamesVectorInDFNames])
+}
 
 AreaRecordTrainingPredictDF<-merge(
-   x=AreaRecordTrainingDF[,c(
-      "Area", "Days_since_start", "status", 
-      "standardised_casesDaily", "standardised_casesYesterday",
-      "RecordAtStartOfDay", "State", "SDI",
-                     paste0("standardised_casesDaily", 2:6))], 
+   x=AreaRecordTrainingDF[,NamesVector], 
    y=AreaRecordTrainingMaxDF, all.x=F, all.y=T, 
-   by=c("Area", "Days_since_start"))
+   by=c("Area", "Weeks_since_start"))
 dim(AreaRecordTrainingPredictDF)
 
+if(verbose){
+   print("Made AreaRecordTrainingPredictDF by merging AreaRecordTrainingDF and AreaRecordTrainingMaxDF.")
+}
+
+if(verbose){
+   print("names(AreaRecordTrainingPredictDF):")
+   print( names(AreaRecordTrainingPredictDF))
+}
 
 # make the prediction dataset along the lines done already for the genuinely unknown data
-AreaRecordTrainingPredictDF$DayYesterday      <-AreaRecordTrainingPredictDF$Days_since_start
-AreaRecordTrainingPredictDF$Days_since_start  <-AreaRecordTrainingPredictDF$DayYesterday+30
-AreaRecordTrainingPredictDF$RecordAtStartOfDay<-ifelse(
+AreaRecordTrainingPredictDF$WeekLastWeek      <-AreaRecordTrainingPredictDF$Weeks_since_start
+AreaRecordTrainingPredictDF$Weeks_since_start <-AreaRecordTrainingPredictDF$WeekLastWeek+4
+AreaRecordTrainingPredictDF$RecordAtStartOfWeek<-ifelse(
    as.logical(AreaRecordTrainingPredictDF$status), 
-              AreaRecordTrainingPredictDF$standardised_casesDaily, 
-              AreaRecordTrainingPredictDF$RecordAtStartOfDay)
+              AreaRecordTrainingPredictDF$standardised_casesWeekly, 
+              AreaRecordTrainingPredictDF$RecordAtStartOfWeek)
 
-# AreaRecordTrainingPredictDF$standardised_casesYesterday<-AreaRecordTrainingPredictDF$standardised_casesDaily
-# AreaRecordTrainingPredictDF$GapToRecord                <-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesYesterday
+if(verbose){
+   print("names(AreaRecordTrainingPredictDF) after generating RecordAtStartOfWeek and other fields:")
+   print( names(AreaRecordTrainingPredictDF))
+}
+
+AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,
+                     names(AreaRecordTrainingPredictDF)[
+                   ! names(AreaRecordTrainingPredictDF) %in% c("standardised_casesWeekly4")]]
+if(verbose){
+   print("names(AreaRecordTrainingPredictDF) after omitting standardised_casesWeekly4 field:")
+   print( names(AreaRecordTrainingPredictDF))
+}
 
 names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily6",
-                               "standardised_casesDaily7", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)=="standardised_casesWeekly3",
+                               "standardised_casesWeekly4", names(AreaRecordTrainingPredictDF))
 names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily5",
-                               "standardised_casesDaily6", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)=="standardised_casesWeekly2",
+                               "standardised_casesWeekly3", names(AreaRecordTrainingPredictDF))
 names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily4",
-                               "standardised_casesDaily5", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)=="standardised_casesLastWeek",
+                               "standardised_casesWeekly2", names(AreaRecordTrainingPredictDF))
 names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily3",
-                               "standardised_casesDaily4", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily2",
-                               "standardised_casesDaily3", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesYesterday",
-                               "standardised_casesDaily2", names(AreaRecordTrainingPredictDF))
-names(AreaRecordTrainingPredictDF)<-ifelse(
-names(AreaRecordTrainingPredictDF)=="standardised_casesDaily",
-                               "standardised_casesYesterday", names(AreaRecordTrainingPredictDF))
+names(AreaRecordTrainingPredictDF)=="standardised_casesWeekly",
+                               "standardised_casesLastWeek", names(AreaRecordTrainingPredictDF))
 
-AreaRecordTrainingPredictDF$GapToRecord <-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesYesterday
-AreaRecordTrainingPredictDF$GapToRecord2<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily2
-AreaRecordTrainingPredictDF$GapToRecord3<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily3
-AreaRecordTrainingPredictDF$GapToRecord4<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily4
-AreaRecordTrainingPredictDF$GapToRecord5<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily5
-AreaRecordTrainingPredictDF$GapToRecord6<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily6
-AreaRecordTrainingPredictDF$GapToRecord7<-AreaRecordTrainingPredictDF$RecordAtStartOfDay-AreaRecordTrainingPredictDF$standardised_casesDaily7
+if(verbose){
+   print("names(AreaRecordTrainingPredictDF) after shuffling standardised_cases fields:")
+   print( names(AreaRecordTrainingPredictDF))
+}
+
+# [1] "names(AreaRecordTrainingPredictDF) after shuffling standardised_cases fields:"
+#  [1] "Area"                       "Weeks_since_start"          "status"                    
+#  [4] "standardised_casesLastWeek" "standardised_casesWeekly2"  "RecordAtStartOfWeek"       
+#  [7] "State"                      "SDI"                        "standardised_casesWeekly3" 
+# [10] "standardised_casesWeekly4"  "WeekLastWeek"
+
+AreaRecordTrainingPredictDF$GapToRecord <-
+AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$standardised_casesLastWeek
+
+AreaRecordTrainingPredictDF$GapToRecord2<-
+AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$standardised_casesWeekly2
+
+AreaRecordTrainingPredictDF$GapToRecord3<-
+AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$standardised_casesWeekly3
+
+AreaRecordTrainingPredictDF$GapToRecord4<-
+AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$standardised_casesWeekly4
+
+}
+junk<-function(){
 
 
 # AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,c(
