@@ -35,10 +35,10 @@ library("pammtools")
 library("GGally")
 library("VGAM")
 library("bestNormalize")
-library("xlsx")
+library("writexl")
 library("broom")
 library("data.table")
-library("glmulti")
+
 
 ### Functions 
 ### Source multivar functions
@@ -66,10 +66,10 @@ max_days = as.integer(max(std_case_dat_lm$days_end_num))
 
 
 covar_all <- c( "geo_region_factor", "log_popden","Piped_water_percent",
-                "Sewage_or_septic_percent", "log_travel_time_hours", "SDI")
+                "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
 
 covar_cont <- c( "log_popden","Piped_water_percent",
-                "Sewage_or_septic_percent", "log_travel_time_hours", "SDI")
+                "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
 
 ## geo region as a factor 
 
@@ -79,9 +79,8 @@ std_case_dat_lm$geo_region_factor <- as.factor(std_case_dat_lm$geo_region)
 correlations.dat <- as.data.frame(cor(std_case_dat_lm[, covar_cont]))
 
 ## output as an excel file
-## Tutorial on xlsx http://www.sthda.com/english/wiki/r-xlsx-package-a-quick-start-guide-to-manipulate-excel-files-in-r
-write.xlsx(correlations.dat,paste0(dir_results,"lm_correlations.xlsx"), sheetName="Sheet1", col.names=TRUE, row.names=TRUE, append=FALSE)
 
+writexl::write_xlsx(correlations.dat,paste0(dir_results,"lm_correlations.xlsx"))
 
 ## scaling variables to avoid very small coeeficients 
 # std_case_dat_lm$Piped_water_percent <- std_case_dat_lm$Piped_water_percen/1000
@@ -116,8 +115,7 @@ summary.dat <-  as.data.frame(data.table::setDT(summary.dat, keep.rownames = TRU
 ### Model for geo region 
 mod1 <- vglm(days_end_num ~ geo_region_factor, tobit(Upper = max_days), data = std_case_dat_lm)
 # 
-# geo_tobit.dat <- tobit_tab(mod1)
-# write.xlsx(geo_tobit.dat,"PM_test_results/tobit_geo.xlsx", sheetName="Sheet1", col.names=TRUE, row.names=TRUE, append=FALSE)
+
 
 ### Univariate analyses adding each variable individually
 
@@ -187,8 +185,8 @@ pchisq(2 * (logLik(mod6) - logLik(mod5)), df = 2, lower.tail = FALSE)
 ## Keep  Travel time
 
 ## 5) Add SDI 
-mod6 <- vglm(days_end_num ~ geo_region_factor + log_popden  + Piped_water_percent + Sewage_or_septic_percent
-             + log_travel_time_hours + SDI , tobit(Upper = max_days), data = std_case_dat_lm)
+mod7 <- vglm(days_end_num ~ geo_region_factor + log_popden  + Piped_water_percent + Sewage_or_septic_percent
+             + log_travel_time_hours + SDI_index , tobit(Upper = max_days), data = std_case_dat_lm)
 pchisq(2 * (logLik(mod6) - logLik(mod5)), df = 2, lower.tail = FALSE)
 ## Keep  SDI
 
@@ -202,7 +200,7 @@ pchisq(2 * (logLik(mod6) - logLik(mod5)), df = 2, lower.tail = FALSE)
 
 
 ### Output final model
-tmp.dat <- tobit_tab(mod6,1,2)
+tmp.dat <- tobit_tab(mod7,1,2)
 
 multivar_table.dat <- tmp.dat[c(1,2,9,10,8)]
 
@@ -257,6 +255,4 @@ final_table.dat$Univariate_p_value <- ifelse(final_table.dat$Univariate_p_value=
 final_table.dat$Multivariate_p_value <- ifelse(final_table.dat$Multivariate_p_value=="0.00", "<0.01", final_table.dat$Multivariate_p_value)
 #final_table.dat
 
-
-
-write.xlsx(final_table.dat,paste0(dir_results,"tobit_final_model_10.xlsx"), sheetName="Sheet1", col.names=TRUE, row.names=TRUE, append=FALSE)
+writexl::write_xlsx(final_table.dat,paste0(dir_results,"tobit_final_model_10.xlsx"))
