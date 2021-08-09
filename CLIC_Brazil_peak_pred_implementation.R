@@ -26,6 +26,9 @@ source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))
 TestingScalar<-TRUE # whether to use the testing option (subset of data in NE region)
 AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects, TestNE=TestingScalar, verbose=T)
 
+# again with the whole dataset
+AreaRecordTrainingPredictDF <- AUCfn(dir_data_objects, TestNE=F, verbose=T)
+
 #### Output
 
 predSubsetVector<-!is.na(AreaRecordTrainingPredictDF$PredictProb) & !is.na(AreaRecordTrainingPredictDF$EventsObserved)
