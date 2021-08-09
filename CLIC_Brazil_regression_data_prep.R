@@ -33,13 +33,13 @@ library("lubridate")
 #                  type = "BigStandard"))
 
 # update for revised analysis for the paper
-load(paste0(dir_data_objects,"Brazil_BigStandard_results_16_07_21"))
+load(paste0(dir_data_objects,"Brazil_BigStandard_results_16_07_21.RData"))
 
 std_case_dat <- BigStandard$standardised_incidence
 
 
 ### Censoring 
-cens_date = as.Date("2021-01-14")
+cens_date = as.Date("2021-07-16")
 
 
 ### Data up to censoring date - for paper 
@@ -56,10 +56,10 @@ std_case_dat <- merge(std_case_dat,SDI,by.x="Area",by.y="Area_Name", all.x=TRUE)
 
 
 std_case_dat <- std_case_dat %>% dplyr::select(Area,IBGE,date_end,cum_cases,standardised_cases,standardised_deaths,
-                                         popden.x,Piped_water.x,Sewage_or_septic.x,Travel_time.x,GDP_pc_2018,unadj_fert_rate,unadj_Mean_years_edu,SDI)
+                                         popden,Piped_water,Sewage_or_septic,Travel_time,GDP_pc_2018,unadj_fert_rate,unadj_Mean_years_edu,SDI_index)
 
 ## Drop .x suffix
-colnames(std_case_dat) <- gsub('.x','',colnames(std_case_dat))
+#colnames(std_case_dat) <- gsub('.x','',colnames(std_case_dat))
 
 ## Convert to numeric - first remove white space and blank
 std_case_dat$GDP_pc_2018 <- gsub(' ','',std_case_dat$GDP_pc_2018)
