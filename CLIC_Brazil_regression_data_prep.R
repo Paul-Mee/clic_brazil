@@ -125,9 +125,6 @@ std_case_dat$fail[  std_case_dat$standardised_cases >= fail_cases] <- 1
 
 
 
-
-cens_date <- as.Date("2021-01-14")
-
 max_days  <- as.integer(difftime(cens_date ,start_date , units = c("days")))
 
 
