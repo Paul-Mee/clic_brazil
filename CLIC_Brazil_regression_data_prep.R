@@ -29,8 +29,11 @@ library("lubridate")
 
 
 ### Fetch latest data set 
-load(fetch_latest(fileDir = dir_data_objects,
-                  type = "BigStandard"))
+#load(fetch_latest(fileDir = dir_data_objects,
+#                  type = "BigStandard"))
+
+# update for revised analysis for the paper
+load(paste0(dir_data_objects,"Brazil_BigStandard_results_16_07_21"))
 
 std_case_dat <- BigStandard$standardised_incidence
 
