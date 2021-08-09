@@ -826,18 +826,10 @@ if(verbose){
    print( names(AreaRecordTrainingMaxDF))
 }
 
-#  [1] "names(AreaRecordTrainingDF):"
-#  [1] "Area"                       "WeekLastWeek"               "Weeks_since_start"         
-#  [4] "status"                     "standardised_casesWeekly"   "standardised_casesLastWeek"
-#  [7] "RecordAtStartOfWeek"        "GapToRecord"                "GapToRecord2"              
-# [10] "GapToRecord3"               "GapToRecord4"               "State"                     
-# [13] "SDI"                        "popden"                     "standardised_casesWeekly2" 
-# [16] "standardised_casesWeekly3"  "standardised_casesWeekly4"  "Weeks_since_startMax"      
-
 NamesVector<-c(
       "Area", "Weeks_since_start", "status", 
       "standardised_casesWeekly", "standardised_casesLastWeek",
-      "RecordAtStartOfWeek", "State", "SDI",
+      "RecordAtStartOfWeek", "State", "SDI", "popden",
                      paste0("standardised_casesWeekly", 2:4))
 NamesVectorInDFNames<-NamesVector %in% names(AreaRecordTrainingDF)
 if(any(!NamesVectorInDFNames)){
@@ -899,12 +891,6 @@ if(verbose){
    print( names(AreaRecordTrainingPredictDF))
 }
 
-# [1] "names(AreaRecordTrainingPredictDF) after shuffling standardised_cases fields:"
-#  [1] "Area"                       "Weeks_since_start"          "status"                    
-#  [4] "standardised_casesLastWeek" "standardised_casesWeekly2"  "RecordAtStartOfWeek"       
-#  [7] "State"                      "SDI"                        "standardised_casesWeekly3" 
-# [10] "standardised_casesWeekly4"  "WeekLastWeek"
-
 AreaRecordTrainingPredictDF$GapToRecord <-
 AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$standardised_casesLastWeek
 
@@ -917,23 +903,22 @@ AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$stan
 AreaRecordTrainingPredictDF$GapToRecord4<-
 AreaRecordTrainingPredictDF$RecordAtStartOfWeek-AreaRecordTrainingPredictDF$standardised_casesWeekly4
 
-}
-junk<-function(){
-
-
-# AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,c(
-#    "Area", "status", "DayYesterday", "Days_since_start", "RecordAtStartOfDay", "standardised_casesYesterday", "GapToRecord")]
-
 # SubsetNameVector was defined above
-AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,SubsetNameVector]
+if(verbose){
+   print("SubsetNameVector:")
+   print( SubsetNameVector)
+   print("names(AreaRecordTrainingPredictDF) before trying to subset according to SubsetNameVector:")
+   print( names(AreaRecordTrainingPredictDF))
+   print("Names in SubsetNameVector not in names(AreaRecordTrainingPredictDF):")
+   print(SubsetNameVector[! SubsetNameVector %in% names(AreaRecordTrainingPredictDF)])
+}
 
-# AreaRecordTrainingPredictDF[AreaRecordTrainingPredictDF$Area=="São Caetano do Sul_SP",]
+AreaRecordTrainingPredictDF<-AreaRecordTrainingPredictDF[,SubsetNameVector]
 
 AreaRecordTrainingPredictDF$Predict<-predict(AreaTrainingCoxph, newdata=AreaRecordTrainingPredictDF, type ="expected")
 # prob of event, which is 1-survival prob
 AreaRecordTrainingPredictDF$PredictProb<-1-exp(-AreaRecordTrainingPredictDF$Predict)
 # hist(AreaRecordTrainingPredictDF$PredictProb)
-# plot(x=AreaRecordTrainingPredictDF$Days_since_start, y=AreaRecordTrainingPredictDF$PredictProb)
 summary(AreaRecordTrainingPredictDF$Predict)
 
 # AreaRecordTrainingPredictDF[AreaRecordTrainingPredictDF$Area=="São Caetano do Sul_SP",]
@@ -944,7 +929,7 @@ table(table(AreaRecordTrainingPredictDF$Area))
 
 # make a test dataset out of the remaining records in the source data
 AreaRecordTestDF<-AreaRecordTestTrainingDF[
-   AreaRecordTestTrainingDF$Days_since_start-AreaRecordTestTrainingDF$Days_since_startMax>I(-30),]
+   AreaRecordTestTrainingDF$Weeks_since_start-AreaRecordTestTrainingDF$Weeks_since_startMax>I(-4),]
 dim(AreaRecordTestDF)
 # AreaRecordTestDF[AreaRecordTestDF$Area=="São Caetano do Sul_SP",]
 
@@ -969,7 +954,7 @@ dim(AreaRecordTrainingPredictDF)
 
 # names(AreaRecordTrainingPredictDF)
 
-par(mfrow=c(1,1))
+# par(mfrow=c(1,1))
 
 # https://afit-r.github.io/histograms
 # ggplot(AreaRecordTrainingPredictDF, aes(x=PredictProb)) + 
@@ -1051,8 +1036,8 @@ par(mfrow=c(1,1))
 # write.csv(x=data.frame(AUC=AUCVector, LastDay=LastDaySubsetVector), 
 #           file=paste0(FolderName, "AUCbyTime.csv"), row.names = FALSE)
 
-return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
-
+# return(PredictDF=AreaRecordTrainingPredictDF[predSubsetVector,])
+return(PredictDF=AreaRecordTrainingPredictDF)
 
 }
 
