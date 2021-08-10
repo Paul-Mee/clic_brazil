@@ -30,7 +30,7 @@ library("reshape")
 library("plot3D")
 library("gridExtra")
 library("finalfit")
-library("xlsx")
+library("writexl")
 library("tidyr")
 library("multcomp")
 library("Epi") 
@@ -228,7 +228,7 @@ rt_mean_covar_dat$start_day_group <- factor(rt_mean_covar_dat$start_day_group,
 table(rt_mean_covar_dat$start_day_group)
 
 covar_cont <- c( "log_popden","Piped_water_percent",
-                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI")
+                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
 
 ## Drop rows with NA for any continuous covariate 
 
