@@ -129,7 +129,7 @@ anovaCox<-function(model1, model2, Wald=F){
  
  
 AUCfn <-function(FolderName, dir_script=dir_scripts, dir_data=dir_data_objects, dir_covar=dir_covariates, 
-                 TestNE=F, verbose=F){
+                 TestNE=F, verbose=F, LatestDate=NULL){
 
 require(data.table)
 require(survival)
@@ -173,7 +173,6 @@ c_dat <- as.data.frame(c_dat)
 
 detach(package:data.table)
 
-
 # and add intervention timign data
 # c_dat = district.start.date.find(c_dat, BigStandard$Intervention)
 # sort(names(c_dat))
@@ -186,6 +185,13 @@ summary(AreaProfilesDF$Days_since_start)
 
 AreaProfilesDF$State<-substrRight(as.character(AreaProfilesDF$Area), 2)   
 
+if(verbose){
+   print("names(AreaProfilesDF):")
+   print( names(AreaProfilesDF))
+   print("head(AreaProfilesDF):")
+   print( head(AreaProfilesDF))
+}
+
 if(TestNE){
    print("dim(AreaProfilesDF):")
    print( dim(AreaProfilesDF))
@@ -196,6 +202,15 @@ if(TestNE){
    print( dim(AreaProfilesDF))
 }
 
+# if(!is.null(LatestDate)){
+#    print("dim(AreaProfilesDF):")
+#    print( dim(AreaProfilesDF))
+#    print("Subsetting by date...")
+#    AreaProfilesDF<-AreaProfilesDF[ 
+#       AreaProfilesDF$State %in% c("AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"),]
+#    print("dim(AreaProfilesDF):")
+#    print( dim(AreaProfilesDF))
+# }
 
 # ReferenceAreaScalar<-"Guarulhos_SP"
 
@@ -408,12 +423,13 @@ for(i in 1:length(AreaVector)){
       
       # AreaProfilesSubsetDF$event <-NA
       
-      if(i<=5){
-         print("first ten columns of AreaProfilesSubsetDF:")
-         print(AreaProfilesSubsetDF[,1:10])
+      if(verbose){
+         if(i<=5){
+            # print("first ten columns of AreaProfilesSubsetDF:")
+            # print(AreaProfilesSubsetDF[,1:10])
+         }
       }
-      # print(names(AreaProfilesSubsetDF))
-      
+
       AreaRecordDF<-rbind(AreaRecordDF,
             AreaProfilesSubsetDF[,c("Area", "Weeks_since_start", "WeekLastWeek", "status",
                "RecordAtStartOfWeek", 
