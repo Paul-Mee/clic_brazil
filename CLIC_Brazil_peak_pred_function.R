@@ -202,15 +202,15 @@ if(TestNE){
    print( dim(AreaProfilesDF))
 }
 
-# if(!is.null(LatestDate)){
-#    print("dim(AreaProfilesDF):")
-#    print( dim(AreaProfilesDF))
-#    print("Subsetting by date...")
-#    AreaProfilesDF<-AreaProfilesDF[ 
-#       AreaProfilesDF$State %in% c("AL", "BA", "CE", "MA", "PB", "PE", "PI", "RN", "SE"),]
-#    print("dim(AreaProfilesDF):")
-#    print( dim(AreaProfilesDF))
-# }
+if(!is.null(LatestDate)){
+   print("dim(AreaProfilesDF):")
+   print( dim(AreaProfilesDF))
+   print("Subsetting by date...")
+   AreaProfilesDF<-AreaProfilesDF[
+      AreaProfilesDF$date_end <=LatestDate,]
+   print("dim(AreaProfilesDF):")
+   print( dim(AreaProfilesDF))
+}
 
 # ReferenceAreaScalar<-"Guarulhos_SP"
 
@@ -234,8 +234,12 @@ if(TestNE){
 
 # distribution of latest days across municipalities
 AreaProfilesLatestDayDF<-aggregate(Days_since_start ~ Area, max, data=AreaProfilesDF)
-head(AreaProfilesLatestDayDF)
-summary(AreaProfilesLatestDayDF$Days_since_start)
+if(verbose){
+   print("head(AreaProfilesLatestDayDF):")
+   print( head(AreaProfilesLatestDayDF)  )
+   print("summary(AreaProfilesLatestDayDF$Days_since_start):")
+   print( summary(AreaProfilesLatestDayDF$Days_since_start)  )
+}
 # order from high to low in terms of max days
 AreaProfilesLatestDayDF<-AreaProfilesLatestDayDF[rev(order(as.numeric(AreaProfilesLatestDayDF$Days_since_start))),]
 head(AreaProfilesLatestDayDF)
@@ -267,15 +271,22 @@ AreaProfilesWeeklyDF<-data.frame(
    standardised_casesWeekly=double(),
       stringsAsFactors=FALSE)
 
-# calculate new cases by day, by differencing the cumulative cases
+
+if(verbose){
+   print("Starting to calculate new cases by week, by differencing the cumulative cases.")
+}
+
 for(i in 1:length(AreaVector)){
 # for(i in 1:10){
-   # print(unlist(list(Area=i)))
+   # if(verbose){print(unlist(list(Area=i)))}
    AreaProfilesDailysubsetDF<-AreaProfilesDF[
       AreaProfilesDF$Area==AreaVector[i], 
       c("Area", "Days_since_start", "standardised_cases")]
    AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
    AreaProfilesDailysubsetDF$standardised_casesDaily<-c(0, diff(AreaProfilesDailysubsetDF$standardised_cases))
+   # if(verbose){
+   #    print(unlist(list("Number of records in AreaProfilesDailysubsetDF"=nrow(AreaProfilesDailysubsetDF))))
+   # }
    
    if(nrow(AreaProfilesDailysubsetDF)>0){
       # print(head(AreaProfilesDailysubsetDF))
@@ -285,45 +296,55 @@ for(i in 1:length(AreaVector)){
       # print(dim(AreaProfilesDailysubsetDF))
       AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[
          AreaProfilesDailysubsetDF$Days_since_start %in% Days_since_startDayTruncated,]
-      # print(dim(AreaProfilesDailysubsetDF))
-      AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
-      AreaProfilesDailysubsetDF$Weeks_since_start<-as.numeric(Days_since_startWeekTruncated)
-      # print(AreaProfilesDailysubsetDF)
+      # if(verbose){
+      #    print(unlist(list(
+      #       "Number of records in AreaProfilesDailysubsetDF after restricting to whole weeks"=
+      #          nrow(AreaProfilesDailysubsetDF))))
+      # }
+      if(nrow(AreaProfilesDailysubsetDF)>0){
+         AreaProfilesDailysubsetDF<-AreaProfilesDailysubsetDF[order(AreaProfilesDailysubsetDF$Days_since_start),]
+         AreaProfilesDailysubsetDF$Weeks_since_start<-as.numeric(Days_since_startWeekTruncated)
+         # print(AreaProfilesDailysubsetDF)
      
-      AreaProfilesWeeklysubsetDF<-as.data.frame(tapply(
-         AreaProfilesDailysubsetDF$standardised_casesDaily, 
-         AreaProfilesDailysubsetDF$Weeks_since_start, 
-         sum))
+         AreaProfilesWeeklysubsetDF<-as.data.frame(tapply(
+            AreaProfilesDailysubsetDF$standardised_casesDaily, 
+            AreaProfilesDailysubsetDF$Weeks_since_start, 
+            sum))
      
-      names(AreaProfilesWeeklysubsetDF)<-"standardised_casesWeekly"
-      AreaProfilesWeeklysubsetDF$Weeks_since_start<-as.numeric(rownames(AreaProfilesWeeklysubsetDF))
-      AreaProfilesWeeklysubsetDF$Area             <-AreaVector[i]
-      # print(head(AreaProfilesWeeklysubsetDF))
+         names(AreaProfilesWeeklysubsetDF)<-"standardised_casesWeekly"
+         AreaProfilesWeeklysubsetDF$Weeks_since_start<-as.numeric(rownames(AreaProfilesWeeklysubsetDF))
+         AreaProfilesWeeklysubsetDF$Area             <-AreaVector[i]
+         # print(head(AreaProfilesWeeklysubsetDF))
+         
+         AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
+      }
    } 
    # AreaProfilesDailyDF<-rbind(AreaProfilesDailyDF, AreaProfilesDailysubsetDF)
-   AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
    
+   # move the following inside the loop:
+   # AreaProfilesWeeklyDF<-rbind(AreaProfilesWeeklyDF, AreaProfilesWeeklysubsetDF)
+   
+   # AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
 
-
-# AreaProfilesDailyDF<-AreaProfilesDailyDF[,c("Area", "Days_since_start", "standardised_casesDaily")]
-
-# don't modify or run the following; means that the main DF to work with should be AreaProfilesWeeklyDF
-#
-# # merge back
-#   dim(AreaProfilesDF)
-# names(AreaProfilesDF)
-# AreaProfilesDF<-merge(
-#    x=AreaProfilesDF, y=AreaProfilesWeeklyDF, 
-#    by=c("Area", "Days_since_start"), all.x=F, all.y=T)
-# dim(AreaProfilesDF)
-# print(names(AreaProfilesDF))
-# AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
-# # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
-# print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
-
+   # don't modify or run the following; means that the main DF to work with should be AreaProfilesWeeklyDF
+   #
+   # # merge back
+   #   dim(AreaProfilesDF)
+   # names(AreaProfilesDF)
+   # AreaProfilesDF<-merge(
+   #    x=AreaProfilesDF, y=AreaProfilesWeeklyDF, 
+   #    by=c("Area", "Days_since_start"), all.x=F, all.y=T)
+   # dim(AreaProfilesDF)
+   # print(names(AreaProfilesDF))
+   # AreaProfilesDF<-AreaProfilesDF[order(AreaProfilesDF$Area, as.numeric(AreaProfilesDF$Days_since_start)),]
+   # # View(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")])
+   # print(head(AreaProfilesDF[, c("Area", "Days_since_start", "standardised_cases", "standardised_casesDaily")]))
 
 }
 
+if(verbose){
+   print("Finished calculating new cases by week")
+}
 
 # peaksVector<-find_peaks(AreaProfilesSubsetDF$standardised_casesDaily)
 
