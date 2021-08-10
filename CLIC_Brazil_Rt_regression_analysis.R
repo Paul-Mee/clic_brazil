@@ -384,7 +384,10 @@ geo_day_dat1$start_day_group <- factor(geo_day_dat1$start_day_group,
 ### Export the table 
 
 regress_file <- paste0(dir_results,"RT_regress_final_table_",as.character(day_start),"_",as.character(day_end),".xlsx")
-write.xlsx(final_table.dat ,file = regress_file, row.names = FALSE)
+
+
+writexl::write_xlsx(final_table.dat,regress_file)
+
 
 summary(rt_mean_covar_dat$Rt_mean)
 
