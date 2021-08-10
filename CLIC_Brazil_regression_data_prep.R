@@ -34,13 +34,14 @@ library("lubridate")
 
 # update for revised analysis for the paper
 load(paste0(dir_data_objects,"Brazil_BigStandard_results_16_07_21.RData"))
+#load(paste0(dir_data_objects,"Brazil_BigStandard_results_2021_01_14.RData"))
 
 std_case_dat <- BigStandard$standardised_incidence
 
 
 ### Censoring 
+#cens_date = as.Date("2021-01-14")
 cens_date = as.Date("2021-07-16")
-
 
 ### Data up to censoring date - for paper 
 std_case_dat <- std_case_dat [which(std_case_dat$date_end<=format(as.Date(cens_date), "%Y-%m-%d"))  ,] 
@@ -55,8 +56,12 @@ std_case_dat <- merge(std_case_dat,SDI,by.x="Area",by.y="Area_Name", all.x=TRUE)
 
 
 
+#std_case_dat <- std_case_dat %>% dplyr::select(Area,IBGE,date_end,cum_cases,standardised_cases,standardised_deaths,
+#                                         popden,Piped_water,Sewage_or_septic,Travel_time,GDP_pc_2018,unadj_fert_rate,unadj_Mean_years_edu,SDI_index)
+
 std_case_dat <- std_case_dat %>% dplyr::select(Area,IBGE,date_end,cum_cases,standardised_cases,standardised_deaths,
-                                         popden,Piped_water,Sewage_or_septic,Travel_time,GDP_pc_2018,unadj_fert_rate,unadj_Mean_years_edu,SDI_index)
+                                         popden.x,Piped_water.x,Sewage_or_septic,Travel_time,GDP_pc_2018,unadj_fert_rate,unadj_Mean_years_edu,SDI_index)
+
 
 ## Drop .x suffix
 #colnames(std_case_dat) <- gsub('.x','',colnames(std_case_dat))
