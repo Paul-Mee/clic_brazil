@@ -185,12 +185,12 @@ summary(AreaProfilesDF$Days_since_start)
 
 AreaProfilesDF$State<-substrRight(as.character(AreaProfilesDF$Area), 2)   
 
-if(verbose){
-   print("names(AreaProfilesDF):")
-   print( names(AreaProfilesDF))
-   print("head(AreaProfilesDF):")
-   print( head(AreaProfilesDF))
-}
+# if(verbose){
+#    print("names(AreaProfilesDF):")
+#    print( names(AreaProfilesDF))
+#    print("head(AreaProfilesDF):")
+#    print( head(AreaProfilesDF))
+# }
 
 if(TestNE){
    print("dim(AreaProfilesDF):")
