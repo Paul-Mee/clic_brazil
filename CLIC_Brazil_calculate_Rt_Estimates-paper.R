@@ -189,7 +189,6 @@ check_data <- data.frame( city_name=character(),
 options(warn=2)
 #i <- 1
 for (i in 1:length(city_dat_list)) {
- # for (i in 1:10) {
     city_dat_tmp <- as.data.frame(city_dat_list[i])
     print (city_dat_tmp[1,1])
     #city_dat_tmp <- city_dat_tmp[c(1:6)]
@@ -211,8 +210,12 @@ for (i in 1:length(city_dat_list)) {
     ### RSmooth blows up is there is an initial string of 0's so drop data until a cumulative total of 5 cases locally 
 
     city_dat_tmp <- city_dat_tmp[ which(city_dat_tmp$cum_cases >= 10),]
-                         
     
+    ## Check whether enough records are left > 10 rows needed for Rt prediction and jump to next record if not 
+    print ( paste0( "Number of rows with > 10 cumulative cases = ",as.character( nrow(city_dat_tmp))))
+    
+    if( nrow(city_dat_tmp) <= 10 )  next; 
+                         
     ### Data cleaning if there is a v large increment in cases after a string of 0 or v low values reduce increment to 0 
     
    city_dat_tmp <- city_dat_tmp %>% mutate(rollapply_sum = zoo::rollapplyr(city_dat_tmp$inc_cases, 31, sum, partial = TRUE) )
