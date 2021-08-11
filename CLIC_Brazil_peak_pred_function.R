@@ -6,6 +6,8 @@
 # 3) in the "Environment" pane, select the file under "Staged" then "Commit"
 # 4) in the resulting window, having put a comment for the commit, "Push" (or can push in another window)
 
+# test
+
 # for this particular task of debugging the peak prediction
 #
 # edit "CLIC_Brazil_Script_directories.R" so that for Neal the folders are set right for him, 
