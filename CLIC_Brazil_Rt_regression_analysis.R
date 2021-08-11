@@ -6,22 +6,6 @@ rm(list=ls())
 
 
 
-#  Set home directory  and load data 
-if(Sys.info()[['user']]=="eidenale"){
-  # Neal
-  setwd("C:\\Users\\eidenale\\Dropbox\\COVID_cities\\")
-  
-}
-if(Sys.info()[['user']]=="phpupmee"){
-  # Paul
-  setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/")
-  
-}
-if(Sys.info()[['user']]=="eideobra"){
-  # Oli
-  setwd("/Users/eideobra/Dropbox/10_Collab/CADDE/COVID_cities/")
-}
-
 
 
 # Main packages
@@ -59,7 +43,7 @@ source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
 
 
 ### Functions - Source multivar functions
-source(paste0(dir_scripts,"CC_Scripts/PM_multivar_functions.R"))
+source(paste0(dir_scripts,"PM_multivar_functions.R"))
 
 
 ### Load Rt prediction data 
@@ -172,12 +156,14 @@ names(rt_mean_dat)[3] <- "Rt_mean"
 ### Get day of year as a number 
 rt_mean_dat$start_date_day <- lubridate::yday(rt_mean_dat$Start_Date)
 
-saveRDS(rt_mean_dat,file="CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/Brazil_mean_Rt.RDS")
+saveRDS(rt_mean_dat,file=(paste0(dir_Rt_data,"Brazil_mean_Rt.RDS")))
+
+
 
 ### Merge with other variables
 ### Covariate data created in PM_multivar_anal_v3.R
 
-covar_dat <- readRDS("CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/Brazil_lm_covariates_fail_10.RDS")
+covar_dat <- readRDS(paste0(dir_Rt_data,"Brazil_lm_covariates_fail_10.RDS"))
 rt_mean_covar_dat <- merge(rt_mean_dat,covar_dat,by.x="city_state",by.y="Area_char",all.x=TRUE)
 ## geo region as a factor 
 
@@ -185,28 +171,28 @@ rt_mean_covar_dat$geo_region_factor <- as.factor(rt_mean_covar_dat$geo_region)
 
 ### Histogram of Rt_mean
 
-# p <- rt_mean_covar_dat %>%
-#   ggplot( aes(x=Rt_mean)) +
-#   geom_histogram( binwidth=0.05, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
-#   ggtitle("Rt_mean - bin = 0.05") +
-#   theme(
-#     plot.title = element_text(size=20)
-#   )
-# p
+p <- rt_mean_covar_dat %>%
+  ggplot( aes(x=Rt_mean)) +
+  geom_histogram( binwidth=0.05, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("Rt_mean - bin = 0.05") +
+  theme(
+    plot.title = element_text(size=20)
+  )
+p
 # ggsave("PM_test_results/RT_historgram.png",p,  width=20, height=15, units="cm")
 
-#rt_mean_covar_dat$log_Rt_mean <- log(rt_mean_covar_dat$Rt_mean)
+rt_mean_covar_dat$log_Rt_mean <- log(rt_mean_covar_dat$Rt_mean)
 
 ### Histogram of log Rt_mean
 
-# p <- rt_mean_covar_dat %>%
-#   ggplot( aes(x=log_Rt_mean)) +
-#   geom_histogram( binwidth=0.05, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
-#   ggtitle("log Rt_mean - bin = 0.05") +
-#   theme(
-#     plot.title = element_text(size=20)
-#   )
-# p
+p <- rt_mean_covar_dat %>%
+  ggplot( aes(x=log_Rt_mean)) +
+  geom_histogram( binwidth=0.05, fill="#69b3a2", color="#e9ecef", alpha=0.9) +
+  ggtitle("log Rt_mean - bin = 0.05") +
+  theme(
+    plot.title = element_text(size=20)
+  )
+p
 # ggsave("PM_test_results/log_RT_mean_historgram.png",p,  width=20, height=15, units="cm")
 
 ## Histogram of start date day 
@@ -238,16 +224,31 @@ rt_mean_covar_dat$start_day_group <- cut(
 
 tapply(rt_mean_covar_dat$Start_Date, rt_mean_covar_dat$start_day_group, summary)
 
+gp1 <- dplyr::filter(rt_mean_covar_dat, start_day_group=="gp1" ) 
+min_gp1 <- format(min(gp1$Start_Date),"%d-%b-%y")
+max_gp1 <- format(max(gp1$Start_Date),"%d-%b-%y")
+range_gp1 <- paste0(min_gp1, " to ", max_gp1)
+
+gp2 <- dplyr::filter(rt_mean_covar_dat, start_day_group=="gp2" ) 
+min_gp2 <- format(min(gp2$Start_Date),"%d-%b-%y")
+max_gp2 <- format(max(gp2$Start_Date),"%d-%b-%y")
+range_gp2 <- paste0(min_gp2, " to ", max_gp2)
+
+gp3<- dplyr::filter(rt_mean_covar_dat, start_day_group=="gp3" ) 
+min_gp3 <- format(min(gp3$Start_Date),"%d-%b-%y")
+max_gp3 <- format(max(gp3$Start_Date),"%d-%b-%y")
+range_gp3 <- paste0(min_gp3, " to ", max_gp3)
+
 rt_mean_covar_dat$start_day_group <- factor(rt_mean_covar_dat$start_day_group, 
                                             levels = c("gp1", "gp2" , "gp3"),
-                                            labels = c("19-Mar to 26-Apr", "27-Apr to 12-May", "13-May to 17-Jul"))
+                                            labels = c(range_gp1, range_gp2, range_gp3))
 
 
 
 table(rt_mean_covar_dat$start_day_group)
 
 covar_cont <- c( "log_popden","Piped_water_percent",
-                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI")
+                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
 
 ## Drop rows with NA for any continuous covariate 
 
@@ -297,7 +298,7 @@ emmeans::emmip(covid.mod1,  start_day_group ~  geo_region_factor)
 
 
 covar_all <- c( "start_day_group" ,"geo_region_factor", "log_popden","Piped_water_percent",
-                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI")
+                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
 
 ### Getting tabular output 
 
