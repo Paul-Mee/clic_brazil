@@ -42,19 +42,33 @@ library("multcomp")
 library("Epi") 
 
 
+# Workflow:
+
+rm(list=ls())
+##############
+### Directory set up
+### Update this with your local directories
+##############
+dir_scripts <- "C:/github/clic_brazil/"
+
+# set up script directories
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+
+# loads functions to be used for standardisation
+source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
+
 
 ### Functions - Source multivar functions
-source("CC_Scripts/PM_multivar_functions.R")
-### Source OB functions 
-source("CC_scripts/OB_standardisation_functions.R")
+source(paste0(dir_scripts,"CC_Scripts/PM_multivar_functions.R"))
+
 
 ### Load Rt prediction data 
 
 
 #rt_all_dat <- readRDS("CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/Brazil_rt_prediction-current.RDS")
 
-#### Repalce this with censored data 
-rt_all_dat <- readRDS("CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/Brazil_rt_prediction-current_cens_jan14.RDS")
+#### Load data update 
+ rt_all_dat <- readRDS(paste0(dir_Rt_data,"Brazil_rt_prediction-current-paper.RDS"))
 
 # Sample 10 places at random
 
@@ -83,8 +97,8 @@ rt_all_dat <- readRDS("CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/Br
 
 
 ### Fetch latest data set 
-load(fetch_latest(fileDir = "CC_Intermediate_data_obj/",
-                  type = "BigStandard"))
+# update for revised analysis for the paper
+load(paste0(dir_data_objects,"Brazil_BigStandard_results_16_07_21.RData"))
 
 std_case_dat <- BigStandard$standardised_incidence
 
@@ -220,7 +234,7 @@ rt_mean_covar_dat$start_day_group <- cut(
 
 
 # Sumary stats 
-## This was hand coded - labels could be autoamtically assigned
+## This was hand coded - labels could be automatically assigned
 
 tapply(rt_mean_covar_dat$Start_Date, rt_mean_covar_dat$start_day_group, summary)
 
