@@ -43,7 +43,7 @@ source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
 
 
 ### Functions - Source multivar functions
-source(paste0(dir_scripts,"PM_multivar_functions.R"))
+source(paste0(dir_scripts,"CLIC_Brazil_multivar_functions.R"))
 
 
 ### Load Rt prediction data 
