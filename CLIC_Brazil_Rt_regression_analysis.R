@@ -20,7 +20,7 @@ library("reshape")
 library("plot3D")
 library("gridExtra")
 library("finalfit")
-library("xlsx")
+library("writexl")
 library("tidyr")
 library("multcomp")
 library("Epi") 
@@ -367,13 +367,13 @@ anova(covid.mod6,covid.mod5)
 ## keep travel
 
 covid.mod7 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent 
-                 + log_travel_time_hours + SDI  , data = rt_omit_dat)
+                 + log_travel_time_hours + SDI_index  , data = rt_omit_dat)
 anova(covid.mod7,covid.mod6)
 
 # Keep SDI 
 
 ### Multivariate output 
-multivar.dat <- multi_tab(rt_omit_dat,"Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent + Sewage_or_septic_percent + log_travel_time_hours + SDI",2,3)
+multivar.dat <- multi_tab(rt_omit_dat,"Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent + Sewage_or_septic_percent + log_travel_time_hours + SDI_index",2,3)
 
 ## fix column numbers ###
 
@@ -384,13 +384,12 @@ final_table.dat <- merge_sum_uni_mult(summary.dat,univar.dat,multivar.dat)
 final_table.dat$Univariate_p_value <- ifelse(final_table.dat$Univariate_p_value=="0.00", "<0.01", final_table.dat$Univariate_p_value)
 final_table.dat$Multivariate_p_value <- ifelse(final_table.dat$Multivariate_p_value=="0.00", "<0.01", final_table.dat$Multivariate_p_value)
 
-regress_file <- paste0("PM_test_results/RT_regress_final_table_",as.character(day_start),"_",as.character(day_end),".xlsx")
-write.xlsx(final_table.dat ,file = regress_file, row.names = FALSE)
+writexl::write_xlsx(final_table.dat,paste0(dir_results,"/RT_regress_final_table_",as.character(day_start),"_",as.character(day_end),".xlsx"))
 
 geo_day_dat1 <- as.data.frame(emmeans::emmeans(covid.mod7, ~ start_day_group*geo_region_factor))
 geo_day_dat1$start_day_group <- factor(geo_day_dat1$start_day_group, 
                                             levels = c("gp1", "gp2" , "gp3"),
-                                            labels = c("19-Mar to 26-Apr", "27-Apr to 12-May", "13-May to 17-Jul"))
+                                            labels = c(range_gp1, range_gp2, range_gp3))
 
 
 # p <- ggplot(data= geo_day_dat1, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
