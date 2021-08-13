@@ -710,8 +710,9 @@ if(TestNE){
 #    GapToRecord + GapToRecord2 + GapToRecord3 + as.factor(State) + popden + as.factor(State) + (1|Area),
 #    data=AreaRecordDF, subset=CompleteSubset)
 AreaCoxph<-coxph(Surv(WeekLastWeek, Weeks_since_start, status) ~ 
-   GapToRecord + GapToRecord2 + GapToRecord3 + as.factor(State) + popden + as.factor(State) + frailty(Area),
+   GapToRecord + GapToRecord2 + GapToRecord3 + popden + as.factor(State) + frailty(Area),
    data=AreaRecordDF, subset=CompleteSubset)
+#    GapToRecord + GapToRecord2 + GapToRecord3 + as.factor(State) + popden + as.factor(State) + frailty(Area),
 
 print("summary(AreaCoxph):")
 print( summary(AreaCoxph))
