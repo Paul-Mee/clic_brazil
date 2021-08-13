@@ -137,7 +137,7 @@ date_rt_start_dat <- tmp.dat %>%
 ### Mean Rt - over rnage day_start to day_end (days after Rt > 0 )
 ### All data
 day_start <- 30 
-day_end <- 150
+day_end <- 180
 
 
 
@@ -250,6 +250,9 @@ table(rt_mean_covar_dat$start_day_group)
 covar_cont <- c( "log_popden","Piped_water_percent",
                  "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
 
+covar_all <- c( "start_day_group" ,"geo_region_factor", "log_popden","Piped_water_percent",
+                "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
+
 ## Drop rows with NA for any continuous covariate 
 
 rt_omit_dat  <- na.omit(rt_mean_covar_dat, cols=covar_cont)
@@ -260,53 +263,53 @@ rt_omit_dat  <- na.omit(rt_mean_covar_dat, cols=covar_cont)
 
 
  
-covid.mod1 <- lm(Rt_mean ~ geo_region_factor*start_day_group  , data = rt_omit_dat)
-summary(covid.mod1)
-Epi::ci.lin(covid.mod1)
-
-### interpreting this model 
-#emmeans::emtrends(covid.mod1, ~ start_day_group)
-covid.mod1b <- lm(Rt_mean ~ start_day_group:geo_region_factor + start_day_group + geo_region_factor , data = rt_omit_dat)
-summary(covid.mod1b)
-Epi::ci.lin(covid.mod1b)
-
-## ggplot stacked bar chart of coefficient values 
-#https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
-## useful article on intepreting models with interaction terms
-# https://www.andrew.cmu.edu/user/achoulde/94842/lectures/lecture10/lecture10-94842.html
-
-
-### plotting this (line plot)
-
-emmeans::emmip(covid.mod1,  start_day_group ~  geo_region_factor)
-
-### plotting this (bar plot)
-
-# geo_day_dat1 <- as.data.frame(emmeans::emmeans(covid.mod1, ~ start_day_group*geo_region_factor))
+# covid.mod1 <- lm(Rt_mean ~ geo_region_factor*start_day_group  , data = rt_omit_dat)
+# summary(covid.mod1)
+# Epi::ci.lin(covid.mod1)
+# 
+# ### interpreting this model 
+# #emmeans::emtrends(covid.mod1, ~ start_day_group)
+# covid.mod1b <- lm(Rt_mean ~ start_day_group:geo_region_factor + start_day_group + geo_region_factor , data = rt_omit_dat)
+# summary(covid.mod1b)
+# Epi::ci.lin(covid.mod1b)
+# 
+# ## ggplot stacked bar chart of coefficient values 
+# #https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+# ## useful article on intepreting models with interaction terms
+# # https://www.andrew.cmu.edu/user/achoulde/94842/lectures/lecture10/lecture10-94842.html
 # 
 # 
-# p <- ggplot(data= geo_day_dat1, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
-#       geom_bar(stat="identity",position="dodge") +
-#       geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3) +
-#       geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
-#       labs(x="Geographic region", y="Rt Mean", fill="Mid day",
-#        title = "Rt Mean predictions for combinations of Mid day and Region
-#               \n (Unadjusted plot)") +
-#   coord_cartesian(ylim = c(0.9, 1.5) )
-# p
-# ggsave("PM_test_results/lm_Rtmean_geo_bar.png",p,  width=20, height=15, units="cm")
-
-
-covar_all <- c( "start_day_group" ,"geo_region_factor", "log_popden","Piped_water_percent",
-                 "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
-
-### Getting tabular output 
-
-
-
+# ### plotting this (line plot)
+# 
+# emmeans::emmip(covid.mod1,  start_day_group ~  geo_region_factor)
+# 
+# ### plotting this (bar plot)
+# 
+# # geo_day_dat1 <- as.data.frame(emmeans::emmeans(covid.mod1, ~ start_day_group*geo_region_factor))
+# # 
+# # 
+# # p <- ggplot(data= geo_day_dat1, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
+# #       geom_bar(stat="identity",position="dodge") +
+# #       geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3) +
+# #       geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
+# #       labs(x="Geographic region", y="Rt Mean", fill="Mid day",
+# #        title = "Rt Mean predictions for combinations of Mid day and Region
+# #               \n (Unadjusted plot)") +
+# #   coord_cartesian(ylim = c(0.9, 1.5) )
+# # p
+# # ggsave("PM_test_results/lm_Rtmean_geo_bar.png",p,  width=20, height=15, units="cm")
+# 
+# 
+# covar_all <- c( "start_day_group" ,"geo_region_factor", "log_popden","Piped_water_percent",
+#                  "Sewage_or_septic_percent", "log_travel_time_hours", "SDI_index")
+# 
+# ### Getting tabular output 
+# 
+# 
+# 
 ### Get summary tabl,
 summary.dat <- summ_tab(rt_omit_dat,covar_cont,2)
-### add  start point day 
+### add  start point day
 
 tmp.dat <- as.data.frame(table(rt_omit_dat$start_day_group))
 names(tmp.dat)[1] <- "term"
@@ -316,7 +319,7 @@ tmp.dat$term <- paste0("start_day_group",tmp.dat$term)
 
 summary.dat <- rbind(tmp.dat,summary.dat)
 
-# ### add  geo region 
+# ### add  geo region
 
 tmp.dat <- as.data.frame(table(rt_omit_dat$geo_region))
 
@@ -330,202 +333,202 @@ summary.dat <- rbind(tmp.dat,summary.dat)
 ## keep row numbers
 summary.dat <-  as.data.frame(data.table::setDT(summary.dat, keep.rownames = TRUE)[])
 summary.dat$rn <- as.numeric(summary.dat$rn)
-
-
-### Summarise by group
-# rt_omit_dat %>%
-#   group_by(geo_region_factor) %>%
-#   summarise(mean(Rt_mean))
 # 
-# levels(rt_omit_dat$start_day_group)
-
-
-### Get univariate stats
-univar.dat <- uni_tab(rt_omit_dat,"Rt_mean ~ ",covar_all,2,3)  
-
-
-# covar_cont <- c(  "log_popden","Piped_water_percent","Sewage_or_septic_percent", "log_travel_time_hours", "SDI") 
-## Suggests that we should drop GDP variable 
-
-covid.mod3 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden  , data = rt_omit_dat)
-anova(covid.mod3,covid.mod1)
-
-## keep log popden
-
-covid.mod4 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent  , data = rt_omit_dat)
-anova(covid.mod3,covid.mod4)
-
-## keep piped water 
-
-covid.mod5 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent , data = rt_omit_dat)
-anova(covid.mod5,covid.mod4)
-## keep Sewage
-
-covid.mod6 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent 
-                                                             + log_travel_time_hours  , data = rt_omit_dat)
-anova(covid.mod6,covid.mod5)
-## keep travel
-
-covid.mod7 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent 
-                 + log_travel_time_hours + SDI_index  , data = rt_omit_dat)
-anova(covid.mod7,covid.mod6)
-
-# Keep SDI 
-
-### Multivariate output 
-multivar.dat <- multi_tab(rt_omit_dat,"Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent + Sewage_or_septic_percent + log_travel_time_hours + SDI_index",2,3)
-
-## fix column numbers ###
-
-final_table.dat <- merge_sum_uni_mult(summary.dat,univar.dat,multivar.dat)
-
-
-## Fix p value estimates
-final_table.dat$Univariate_p_value <- ifelse(final_table.dat$Univariate_p_value=="0.00", "<0.01", final_table.dat$Univariate_p_value)
-final_table.dat$Multivariate_p_value <- ifelse(final_table.dat$Multivariate_p_value=="0.00", "<0.01", final_table.dat$Multivariate_p_value)
-
-writexl::write_xlsx(final_table.dat,paste0(dir_results,"/RT_regress_final_table_",as.character(day_start),"_",as.character(day_end),".xlsx"))
-
-geo_day_dat1 <- as.data.frame(emmeans::emmeans(covid.mod7, ~ start_day_group*geo_region_factor))
-geo_day_dat1$start_day_group <- factor(geo_day_dat1$start_day_group, 
-                                            levels = c("gp1", "gp2" , "gp3"),
-                                            labels = c(range_gp1, range_gp2, range_gp3))
-
-
-# p <- ggplot(data= geo_day_dat1, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
-#       geom_bar(stat="identity",position="dodge") +
-#       geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3,colour="grey50") +
-#       geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
-#       labs(x="Geographic region", y="Rt Mean", fill="Date of local epidemic start",
-#        title = "") +
-#   coord_cartesian(ylim = c(0.8,1.25) )
+# 
+# ### Summarise by group
+# # rt_omit_dat %>%
+# #   group_by(geo_region_factor) %>%
+# #   summarise(mean(Rt_mean))
+# # 
+# # levels(rt_omit_dat$start_day_group)
+# 
+# 
+# ### Get univariate stats
+# univar.dat <- uni_tab(rt_omit_dat,"Rt_mean ~ ",covar_all,2,3)  
+# 
+# 
+# # covar_cont <- c(  "log_popden","Piped_water_percent","Sewage_or_septic_percent", "log_travel_time_hours", "SDI") 
+# ## Suggests that we should drop GDP variable 
+# 
+# covid.mod3 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden  , data = rt_omit_dat)
+# anova(covid.mod3,covid.mod1)
+# 
+# ## keep log popden
+# 
+# covid.mod4 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent  , data = rt_omit_dat)
+# anova(covid.mod3,covid.mod4)
+# 
+# ## keep piped water 
+# 
+# covid.mod5 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent , data = rt_omit_dat)
+# anova(covid.mod5,covid.mod4)
+# ## keep Sewage
+# 
+# covid.mod6 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent 
+#                                                              + log_travel_time_hours  , data = rt_omit_dat)
+# anova(covid.mod6,covid.mod5)
+# ## keep travel
+# 
+# covid.mod7 <- lm(Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent 
+#                  + log_travel_time_hours + SDI_index  , data = rt_omit_dat)
+# anova(covid.mod7,covid.mod6)
+# 
+# # Keep SDI 
+# 
+# ### Multivariate output 
+# multivar.dat <- multi_tab(rt_omit_dat,"Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent + Sewage_or_septic_percent + log_travel_time_hours + SDI_index",2,3)
+# 
+# ## fix column numbers ###
+# 
+# final_table.dat <- merge_sum_uni_mult(summary.dat,univar.dat,multivar.dat)
+# 
+# 
+# ## Fix p value estimates
+# final_table.dat$Univariate_p_value <- ifelse(final_table.dat$Univariate_p_value=="0.00", "<0.01", final_table.dat$Univariate_p_value)
+# final_table.dat$Multivariate_p_value <- ifelse(final_table.dat$Multivariate_p_value=="0.00", "<0.01", final_table.dat$Multivariate_p_value)
+# 
+# writexl::write_xlsx(final_table.dat,paste0(dir_results,"/RT_regress_final_table_",as.character(day_start),"_",as.character(day_end),".xlsx"))
+# 
+# geo_day_dat1 <- as.data.frame(emmeans::emmeans(covid.mod7, ~ start_day_group*geo_region_factor))
+# geo_day_dat1$start_day_group <- factor(geo_day_dat1$start_day_group, 
+#                                             levels = c("gp1", "gp2" , "gp3"),
+#                                             labels = c(range_gp1, range_gp2, range_gp3))
+# 
+# 
+# # p <- ggplot(data= geo_day_dat1, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
+# #       geom_bar(stat="identity",position="dodge") +
+# #       geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3,colour="grey50") +
+# #       geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
+# #       labs(x="Geographic region", y="Rt Mean", fill="Date of local epidemic start",
+# #        title = "") +
+# #   coord_cartesian(ylim = c(0.8,1.25) )
+# # p
+# # ggsave("PM_test_results/lm_Rtmean_geo_bar.png",p,  width=20, height=15, units="cm")
+# 
+# ### Export the table 
+# 
+# 
+# 
+# summary(rt_mean_covar_dat$Rt_mean)
+# 
+# ### Plotting estimates for adjusted model 
+# inter_file <- paste0("PM_test_results/RT_regress_interact_estimates_",as.character(day_start),"_",as.character(day_end),".xlsx")
+# interact_estimates.dat <- as.data.frame(Epi::ci.lin(covid.mod7))
+# 
+# interact_estimates.dat$Variable <- rownames(interact_estimates.dat)
+# 
+# names(interact_estimates.dat)[4] <- "p_value"
+# names(interact_estimates.dat)[5] <- "L95CI"
+# names(interact_estimates.dat)[6] <- "U95CI"
+# 
+# interact_estimates.dat$Estimate <- formatC(interact_estimates.dat$Estimate, format = "f", digits = 3)
+# interact_estimates.dat$p_value <- formatC(interact_estimates.dat$p_value, format = "f", digits = 3)
+# interact_estimates.dat$p_value <- ifelse(interact_estimates.dat$p_value=="0.000", "<0.001", interact_estimates.dat$p_value)
+# interact_estimates.dat$L95CI <- formatC(interact_estimates.dat$L95CI, format = "f", digits = 3)
+# interact_estimates.dat$U95CI <- formatC(interact_estimates.dat$U95CI, format = "f", digits = 3)
+# 
+# 
+# interact_estimates.dat$est_ci <- paste0(interact_estimates.dat$Estimate," (",interact_estimates.dat$L95CI," - "
+#                                          ,interact_estimates.dat$U95CI,")")
+# 
+# #write.xlsx(interact_estimates.dat ,file = inter_file, row.names = FALSE)
+# 
+# #interact_estimates.dat <- interact_estimates.dat[c(7,8,4)]
+# 
+# ## Need to figure out how to do this in code
+# bar_data.dat <- read.csv2(file="PM_test_results/RT_regress_interact_estimates_30_150_bar_chart.csv",sep=",")
+# names(bar_data.dat)[1] <- "Estimate"
+# 
+# 
+# 
+# 
+# bar_data.dat$Estimate <- as.numeric(bar_data.dat$Estimate )
+# bar_data.dat$L95CI <- as.numeric(bar_data.dat$L95CI  )
+# bar_data.dat$U95CI <- as.numeric(bar_data.dat$U95CI  )
+# bar_data.dat$start_day <- factor(bar_data.dat$start_day , levels = c("24-Apr to 31-May","1-Jun to 30-Jun","1-Jul to 14-Sep"))
+# bar_data.dat$Estimate_label <- formatC(bar_data.dat$Estimate, format = "f", digits = 2)
+# 
+# p <- ggplot(bar_data.dat, aes(fill=start_day, y=Estimate, x=geo_region)) + 
+#   geom_bar(position="dodge", stat="identity",colour="black",width=0.8) +
+#   geom_errorbar(aes(ymin=L95CI, ymax=U95CI), width=.2,position=position_dodge(0.9),colour="grey50") +
+#   geom_abline(slope=0, intercept=0.0,  col = "black") +
+#   geom_text(aes(label=Estimate_label), position=position_dodge(width=0.9), vjust=-0.8,colour="black",size = 3.0) +
+#   labs(y = "Estimate",
+#        x = "Geographic region",
+#        fill="") 
 # p
-# ggsave("PM_test_results/lm_Rtmean_geo_bar.png",p,  width=20, height=15, units="cm")
-
-### Export the table 
-
-
-
-summary(rt_mean_covar_dat$Rt_mean)
-
-### Plotting estimates for adjusted model 
-inter_file <- paste0("PM_test_results/RT_regress_interact_estimates_",as.character(day_start),"_",as.character(day_end),".xlsx")
-interact_estimates.dat <- as.data.frame(Epi::ci.lin(covid.mod7))
-
-interact_estimates.dat$Variable <- rownames(interact_estimates.dat)
-
-names(interact_estimates.dat)[4] <- "p_value"
-names(interact_estimates.dat)[5] <- "L95CI"
-names(interact_estimates.dat)[6] <- "U95CI"
-
-interact_estimates.dat$Estimate <- formatC(interact_estimates.dat$Estimate, format = "f", digits = 3)
-interact_estimates.dat$p_value <- formatC(interact_estimates.dat$p_value, format = "f", digits = 3)
-interact_estimates.dat$p_value <- ifelse(interact_estimates.dat$p_value=="0.000", "<0.001", interact_estimates.dat$p_value)
-interact_estimates.dat$L95CI <- formatC(interact_estimates.dat$L95CI, format = "f", digits = 3)
-interact_estimates.dat$U95CI <- formatC(interact_estimates.dat$U95CI, format = "f", digits = 3)
-
-
-interact_estimates.dat$est_ci <- paste0(interact_estimates.dat$Estimate," (",interact_estimates.dat$L95CI," - "
-                                         ,interact_estimates.dat$U95CI,")")
-
-#write.xlsx(interact_estimates.dat ,file = inter_file, row.names = FALSE)
-
-#interact_estimates.dat <- interact_estimates.dat[c(7,8,4)]
-
-## Need to figure out how to do this in code
-bar_data.dat <- read.csv2(file="PM_test_results/RT_regress_interact_estimates_30_150_bar_chart.csv",sep=",")
-names(bar_data.dat)[1] <- "Estimate"
-
-
-
-
-bar_data.dat$Estimate <- as.numeric(bar_data.dat$Estimate )
-bar_data.dat$L95CI <- as.numeric(bar_data.dat$L95CI  )
-bar_data.dat$U95CI <- as.numeric(bar_data.dat$U95CI  )
-bar_data.dat$start_day <- factor(bar_data.dat$start_day , levels = c("24-Apr to 31-May","1-Jun to 30-Jun","1-Jul to 14-Sep"))
-bar_data.dat$Estimate_label <- formatC(bar_data.dat$Estimate, format = "f", digits = 2)
-
-p <- ggplot(bar_data.dat, aes(fill=start_day, y=Estimate, x=geo_region)) + 
-  geom_bar(position="dodge", stat="identity",colour="black",width=0.8) +
-  geom_errorbar(aes(ymin=L95CI, ymax=U95CI), width=.2,position=position_dodge(0.9),colour="grey50") +
-  geom_abline(slope=0, intercept=0.0,  col = "black") +
-  geom_text(aes(label=Estimate_label), position=position_dodge(width=0.9), vjust=-0.8,colour="black",size = 3.0) +
-  labs(y = "Estimate",
-       x = "Geographic region",
-       fill="") 
-p
-ggsave("PM_test_results/interaction_estimates.png",p,  width=20, height=15, units="cm")
-
+# ggsave("PM_test_results/interaction_estimates.png",p,  width=20, height=15, units="cm")
 # 
-# bar_data.dat$start_day_group  <- bar_data.dat$Variable
-# bar_data.dat$geo_region  <- ""
+# # 
+# # bar_data.dat$start_day_group  <- bar_data.dat$Variable
+# # bar_data.dat$geo_region  <- ""
+# # 
+# # 
+# # 
+# # 
+# # ## Sort out start_day_group
+# # # make column blank if not start_day_group
+# # bar_data.dat$start_day_group[!grepl("start_day_group",bar_data.dat$start_day_group)]<-""
+# # 
+# # bar_data.dat$start_day_group[bar_data.dat$start_day_group == "DEF"] <-"NEW1"
+# ## Get data in the format for grouped bar chart 
+# 
+# 
+# 
+# write.xlsx(interact_estimates.dat ,file = inter_file, row.names = FALSE)
+# 
+# ## Check range of Rtmean
+# 
+# summary(rt_omit_dat$Rt_mean)
+# summary(covid.mod7)
 # 
 # 
 # 
 # 
-# ## Sort out start_day_group
-# # make column blank if not start_day_group
-# bar_data.dat$start_day_group[!grepl("start_day_group",bar_data.dat$start_day_group)]<-""
+# adj_mean_rt.dat <- as.data.frame(emmeans::emmeans(covid.mod7, ~ start_day_group | geo_region_factor))
 # 
-# bar_data.dat$start_day_group[bar_data.dat$start_day_group == "DEF"] <-"NEW1"
-## Get data in the format for grouped bar chart 
-
-
-
-write.xlsx(interact_estimates.dat ,file = inter_file, row.names = FALSE)
-
-## Check range of Rtmean
-
-summary(rt_omit_dat$Rt_mean)
-summary(covid.mod7)
-
-
-
-
-adj_mean_rt.dat <- as.data.frame(emmeans::emmeans(covid.mod7, ~ start_day_group | geo_region_factor))
-
-### table of frequencies
-tmp.dat <- as.data.frame(table(rt_omit_dat$geo_region_factor,rt_omit_dat$start_day_group))
-tmp.dat <- tmp.dat %>% dplyr::arrange(Var1,Var2)
-names(tmp.dat)[1] <- "geo_region_factor"
-names(tmp.dat)[2] <- "start_day_group"
-# Set row name to 1st column
-tmp.dat <- as.data.frame(data.table::setDT(tmp.dat, keep.rownames = TRUE)[])
-tmp.dat$rn <- as.numeric(tmp.dat$rn)
-
-Mean_Rt_summary.dat <- merge(tmp.dat,adj_mean_rt.dat,by=c("geo_region_factor","start_day_group"))
-
-Mean_Rt_summary.dat$emmean_c <- formatC(Mean_Rt_summary.dat$emmean, format = "f", digits = 3)
-Mean_Rt_summary.dat$lower.CL_c <- formatC(Mean_Rt_summary.dat$lower.CL, format = "f", digits = 3)
-Mean_Rt_summary.dat$upper.CL_c <- formatC(Mean_Rt_summary.dat$upper.CL, format = "f", digits = 3)
-
-Mean_Rt_summary.dat$est_ci <- paste0(Mean_Rt_summary.dat$emmean_c," (",Mean_Rt_summary.dat$lower.CL_c," - ",Mean_Rt_summary.dat$upper.CL_c,") ")
-
-Mean_Rt_summary.dat <- Mean_Rt_summary.dat %>% dplyr::arrange(rn)
-
-#Mean_Rt_summary.dat <- Mean_Rt_summary.dat[c(1,2,4,10)]
-
-write.xlsx(Mean_Rt_summary.dat ,file = "plots/calc_Rt_geo_day.xlsx", row.names = FALSE)
-
-
-## reorder levels of geo region 
-
-
-Mean_Rt_summary.dat$geo_region_factor <- factor(Mean_Rt_summary.dat$geo_region_factor, levels = c("N","NE","CW","SE","S")  )
-
-
-#levels(Mean_Rt_summary.dat$geo_region_factor)
-
-p <- ggplot(data= Mean_Rt_summary.dat, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
-  geom_bar(stat="identity",position="dodge") +
-  geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3) +
-  geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
-  labs(x="Geographic region", y="Rt Mean", fill="Mid day",
-      title = "Rt Mean predictions for combinations of Mid day and Region  (Rt mean window - 30 - 100 days)
-              \n (Adjusted model multivariate model )") +
-  coord_cartesian(ylim = c(0.8, 1.2) )
-p
-ggsave("PM_test_results/lm_Rtmean_geo_adj_bar-30-100.png",p,  width=30, height=15, units="cm")
+# ### table of frequencies
+# tmp.dat <- as.data.frame(table(rt_omit_dat$geo_region_factor,rt_omit_dat$start_day_group))
+# tmp.dat <- tmp.dat %>% dplyr::arrange(Var1,Var2)
+# names(tmp.dat)[1] <- "geo_region_factor"
+# names(tmp.dat)[2] <- "start_day_group"
+# # Set row name to 1st column
+# tmp.dat <- as.data.frame(data.table::setDT(tmp.dat, keep.rownames = TRUE)[])
+# tmp.dat$rn <- as.numeric(tmp.dat$rn)
+# 
+# Mean_Rt_summary.dat <- merge(tmp.dat,adj_mean_rt.dat,by=c("geo_region_factor","start_day_group"))
+# 
+# Mean_Rt_summary.dat$emmean_c <- formatC(Mean_Rt_summary.dat$emmean, format = "f", digits = 3)
+# Mean_Rt_summary.dat$lower.CL_c <- formatC(Mean_Rt_summary.dat$lower.CL, format = "f", digits = 3)
+# Mean_Rt_summary.dat$upper.CL_c <- formatC(Mean_Rt_summary.dat$upper.CL, format = "f", digits = 3)
+# 
+# Mean_Rt_summary.dat$est_ci <- paste0(Mean_Rt_summary.dat$emmean_c," (",Mean_Rt_summary.dat$lower.CL_c," - ",Mean_Rt_summary.dat$upper.CL_c,") ")
+# 
+# Mean_Rt_summary.dat <- Mean_Rt_summary.dat %>% dplyr::arrange(rn)
+# 
+# #Mean_Rt_summary.dat <- Mean_Rt_summary.dat[c(1,2,4,10)]
+# 
+# write.xlsx(Mean_Rt_summary.dat ,file = "plots/calc_Rt_geo_day.xlsx", row.names = FALSE)
+# 
+# 
+# ## reorder levels of geo region 
+# 
+# 
+# Mean_Rt_summary.dat$geo_region_factor <- factor(Mean_Rt_summary.dat$geo_region_factor, levels = c("N","NE","CW","SE","S")  )
+# 
+# 
+# #levels(Mean_Rt_summary.dat$geo_region_factor)
+# 
+# p <- ggplot(data= Mean_Rt_summary.dat, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
+#   geom_bar(stat="identity",position="dodge") +
+#   geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3) +
+#   geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
+#   labs(x="Geographic region", y="Rt Mean", fill="Mid day",
+#       title = "Rt Mean predictions for combinations of Mid day and Region  (Rt mean window - 30 - 100 days)
+#               \n (Adjusted model multivariate model )") +
+#   coord_cartesian(ylim = c(0.8, 1.2) )
+# p
+# ggsave("PM_test_results/lm_Rtmean_geo_adj_bar-30-100.png",p,  width=30, height=15, units="cm")
 
 
 ### Investigation of the use of a log Rt mean in the output 
@@ -536,11 +539,11 @@ rt_omit_dat$log_Rt_mean <- log(rt_omit_dat$Rt_mean)
 univar_logrt.dat <- uni_tab(rt_omit_dat,"log_Rt_mean ~ ",covar_all,2,3)  
 
 ### Multivariate output 
-multivar_logrt.dat <- multi_tab(rt_omit_dat,"log_Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent + Sewage_or_septic_percent + log_travel_time_hours + SDI",2,3)
+multivar_logrt.dat <- multi_tab(rt_omit_dat,"log_Rt_mean ~ start_day_group*geo_region_factor + log_popden + Piped_water_percent + Sewage_or_septic_percent + log_travel_time_hours + SDI_index",2,3)
 
 ## transform estimates from the log scale 
 
-formatC(interact_estimates.dat$L95CI, format = "f", digits = 3)
+
 
 univar_logrt.dat$estimate <- as.character(formatC(exp(as.numeric(univar_logrt.dat$estimate))), format = "f", digits = 3)
 univar_logrt.dat$CI_2.5 <- as.character(formatC(exp(as.numeric(univar_logrt.dat$CI_2.5))), format = "f", digits = 3)
@@ -560,14 +563,14 @@ final_table_logrt.dat <- merge_sum_uni_mult(summary.dat,univar_logrt.dat,multiva
 final_table_logrt.dat$Univariate_p_value <- ifelse(final_table_logrt.dat$Univariate_p_value=="0.00", "<0.01", final_table_logrt.dat$Univariate_p_value)
 final_table_logrt.dat$Multivariate_p_value <- ifelse(final_table_logrt.dat$Multivariate_p_value=="0.00", "<0.01", final_table_logrt.dat$Multivariate_p_value)
 
-regress_file_logrt <- paste0("PM_test_results/RT_regress_final_table_logrt",as.character(day_start),"_",as.character(day_end),".xlsx")
-write.xlsx(final_table_logrt.dat ,file = regress_file_logrt, row.names = FALSE)
+regress_file_logrt <- paste0(dir_results,"RT_regress_final_table_logrt_",as.character(day_start),"_",as.character(day_end),".xlsx")
 
+writexl::write_xlsx(final_table_logrt.dat ,regress_file_logrt)
 
 ### Transforning interaction terms
 
 covid.mod8 <- lm(log_Rt_mean ~ start_day_group*geo_region_factor + log_popden   + Piped_water_percent + Sewage_or_septic_percent 
-                 + log_travel_time_hours + SDI  , data = rt_omit_dat)
+                 + log_travel_time_hours + SDI_index  , data = rt_omit_dat)
   
 
 adj_mean_rt.dat <- as.data.frame(emmeans::emmeans(covid.mod8, ~ start_day_group | geo_region_factor))
@@ -600,8 +603,8 @@ log_Mean_Rt_summary.dat <- log_Mean_Rt_summary.dat %>% dplyr::arrange(rn)
 
 #Mean_Rt_summary.dat <- Mean_Rt_summary.dat[c(1,2,4,10)]
 
-write.xlsx(log_Mean_Rt_summary.dat ,file = "plots/calc_log_Rt_geo_day.xlsx", row.names = FALSE)
 
+#writexl::write_xlsx(log_Mean_Rt_summary.dat ,"plots/calc_log_Rt_geo_day.xlsx")
 
 ## reorder levels of geo region 
 
@@ -616,11 +619,11 @@ p <- ggplot(data= log_Mean_Rt_summary.dat, aes(x=geo_region_factor,y=emmean, fil
   geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3) +
   geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
   labs(x="Geographic region", y="Rt Mean", fill="Mid day",
-       title = "Rt Mean predictions for combinations of Mid day and Region  (Rt mean window - 30 - 150 days)
+       title = "Prediction of Mean Rt for combinations of Mid day and Region  (Window for Mean Rt calculation - 30 - 150 days)
               \n (Adjusted model multivariate model )") +
   coord_cartesian(ylim = c(0.70, 1.2) )
 p
-ggsave("PM_test_results/lm_log_Rtmean_geo_adj_bar-30-150.png",p,  width=30, height=15, units="cm")
+ggsave(paste0(dir_results,"lm_log_Rtmean_geo_adj_bar-30-150.png"),p,  width=30, height=15, units="cm")
 
 
 # ggplot(data= log_Mean_Rt_summary.dat, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
