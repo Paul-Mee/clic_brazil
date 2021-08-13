@@ -222,11 +222,11 @@ final_table.dat <- dplyr::arrange(final_table.dat,as.numeric(rn))
 
 ### Fix Confidence intervals
 
-final_table.dat$est_CI95_Uni  <- paste0(as.character(final_table.dat$Estimate.x)," (",
-                                        as.character(final_table.dat$CI_2.5.x)," - ",as.character(final_table.dat$CI_97.5.x),") ")
+final_table.dat$est_CI95_Uni  <- paste0(as.character(final_table.dat$Estimate.x)," [",
+                                        as.character(final_table.dat$CI_2.5.x),",",as.character(final_table.dat$CI_97.5.x),"] ")
 
-final_table.dat$est_CI95_Multi  <- paste0(as.character(final_table.dat$Estimate.y)," (",
-                                        as.character(final_table.dat$CI_2.5.y)," - ",as.character(final_table.dat$CI_97.5.y),") ")
+final_table.dat$est_CI95_Multi  <- paste0(as.character(final_table.dat$Estimate.y)," [",
+                                        as.character(final_table.dat$CI_2.5.y),",",as.character(final_table.dat$CI_97.5.y),"] ")
 
 ## Fix NAs
 final_table.dat$na_flag <- grepl( "NA",final_table.dat$est_CI95_Uni, fixed = TRUE)

@@ -115,8 +115,8 @@ std_case_dat$Sewage_or_septic_percent <- std_case_dat$Sewage_or_septic*100
 min_cases <- 0.1
 ## Fail epidemic = 10 - cases per 10000
 # Will do sensitivity analysis around this 
-#fail_cases <- 1.0
-fail_cases <- 0.5
+fail_cases <- 1.0
+#fail_cases <- 1.5
 ## epidemic start date 
 
 tmp.dat <- std_case_dat[which( std_case_dat$standardised_cases>=min_cases),]
@@ -181,5 +181,7 @@ max_days  <- as.integer(difftime(cens_date ,start_date , units = c("days")))
 
 
 
-#saveRDS(std_case_dat_lm,file=paste0(dir_Rt_data,"Brazil_lm_covariates_fail_10.RDS"))
- saveRDS(std_case_dat_lm,file=paste0(dir_Rt_data,"Brazil_lm_covariates_fail_5.RDS"))
+saveRDS(std_case_dat_lm,file=paste0(dir_Rt_data,"Brazil_lm_covariates_fail_10.RDS"))
+#saveRDS(std_case_dat_lm,file=paste0(dir_Rt_data,"Brazil_lm_covariates_fail_5.RDS"))
+#saveRDS(std_case_dat_lm,file=paste0(dir_Rt_data,"Brazil_lm_covariates_fail_15.RDS"))
+ 
