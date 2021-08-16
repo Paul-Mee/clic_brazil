@@ -39,6 +39,8 @@ load(paste0(dir_data_objects,"Brazil_BigStandard_results_16_07_21.RData"))
 std_case_dat <- BigStandard$standardised_incidence
 
 
+
+
 ### Censoring 
 #cens_date = as.Date("2021-01-14")
 cens_date = as.Date("2021-07-16")
@@ -122,6 +124,11 @@ fail_cases <- 1.0
 tmp.dat <- std_case_dat[which( std_case_dat$standardised_cases>=min_cases),]
 start_date <- min(tmp.dat$date_end)
 
+## Checking number of municipalities and number past failure threshold
+# total cases
+  nrow(std_case_dat %>% filter(date_end==max(date_end)))
+# total past threshold
+  nrow(std_case_dat %>% filter(date_end==max(date_end) & std_case_dat$standardised_cases >= fail_cases ))
 
 
 ### Failure variable
