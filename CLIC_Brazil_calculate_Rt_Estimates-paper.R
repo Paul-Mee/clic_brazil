@@ -538,6 +538,7 @@ saveRDS(all_plot_data,file=paste0(dir_Rt_data,"Brazil_rt_prediction-current-pape
 ## Plot of success failure
 
 #check_data <- readRDS("CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/check_data.RDS")
+
 ## Summary stats
 # check_data %>% count(pass_fail)
 # 
