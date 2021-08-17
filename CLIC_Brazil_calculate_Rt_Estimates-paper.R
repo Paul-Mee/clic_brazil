@@ -91,7 +91,7 @@ load(fname)
 ### Selecting data  ranges for analysis 
 start_date = as.Date("2020-01-01")
 origin_date = as.Date("2020-01-01")
-cens_date = as.Date("2020-12-31")
+#cens_date = as.Date("2020-12-31")
 ### Cutting off last two weeks of data 
 
 
@@ -107,7 +107,7 @@ c_dat <- BigStandard$standardised_incidence
 ### Data since start date 
 c_dat <- c_dat [which(c_dat$date_end>=format(as.Date(start_date), "%Y-%m-%d"))  ,] 
 ### Data up to censoring date - if needed  
-c_dat <- c_dat [which(c_dat$date_end<=format(as.Date(cens_date), "%Y-%m-%d"))  ,] 
+#c_dat <- c_dat [which(c_dat$date_end<=format(as.Date(cens_date), "%Y-%m-%d"))  ,] 
 ### Data in selected cities
 
 
@@ -235,7 +235,7 @@ for (i in 1:length(city_dat_list)) {
     n_days= nrow(city_dat_tmp)  
     n_cases =  max(city_dat_tmp$cum_cases,na.rm = TRUE)
 
-  if (n_days > 30 & n_cases > 500) {
+  if (n_days > 30 & n_cases > 200) {
     ### Check daily distribution of cases prior to model fit
     
     
@@ -531,7 +531,7 @@ Rplot_data$Rt_RSmooth_UCI[2:nday] <- as.numeric(RSmoothCI[2,2:nday])
 
 ### Save R dataset
 if(exists("all_plot_data")==TRUE)  {
-saveRDS(all_plot_data,file=paste0(dir_Rt_data,"Brazil_rt_prediction-current-paper.RDS"))}
+saveRDS(all_plot_data,file=paste0(dir_Rt_data,"Brazil_rt_prediction-current-paper_v2.RDS"))}
 
 
 #saveRDS(check_data,file="CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/check_data.RDS")
