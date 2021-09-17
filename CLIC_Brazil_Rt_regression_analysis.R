@@ -52,7 +52,7 @@ source(paste0(dir_scripts,"CLIC_Brazil_multivar_functions.R"))
 #rt_all_dat <- readRDS("CC_data/City_Case_data/Brazil/Brazil_formatted/Rt_Data/Brazil_rt_prediction-current.RDS")
 
 #### Load data update 
- rt_all_dat <- readRDS(paste0(dir_Rt_data,"Brazil_rt_prediction-current-paper.RDS"))
+ rt_all_dat <- readRDS(paste0(dir_Rt_data,"Brazil_rt_prediction-current-paper_v2.RDS"))
 
 # Sample 10 places at random
 
@@ -95,7 +95,7 @@ tmp_case_dat <- std_case_dat[c("Area", "date_end", "standardised_cases")]
 
 start_case_dat <- tmp_case_dat %>% 
     group_by(Area) %>% 
-    filter(standardised_cases > 0.1) %>% 
+    dplyr::filter(standardised_cases > 0.1) %>% 
     slice(1)
 
 ## merge to rt_all_dat on date and place 
@@ -146,7 +146,7 @@ mean_rt_dat <- rt_gt0_dat  %>%
                group_by(city_state) %>%
                summarise_at(vars( "Rt_Smooth"), mean) 
 
-
+summary(mean_rt_dat$Rt_Smooth)
 
 rt_mean_dat <- merge(date_rt_start_dat,mean_rt_dat,by="city_state")
 
@@ -220,7 +220,6 @@ rt_mean_covar_dat$start_day_group <- cut(
 
 
 # Sumary stats 
-## This was hand coded - labels could be automatically assigned
 
 tapply(rt_mean_covar_dat$Start_Date, rt_mean_covar_dat$start_day_group, summary)
 
@@ -599,9 +598,9 @@ log_Mean_Rt_summary.dat <- log_Mean_Rt_summary.dat %>% dplyr::arrange(rn)
 
 #Mean_Rt_summary.dat <- Mean_Rt_summary.dat[c(1,2,4,10)]
 
-write.xlsx(log_Mean_Rt_summary.dat ,file = "plots/calc_log_Rt_geo_day.xlsx", row.names = FALSE)
+#write.xlsx(log_Mean_Rt_summary.dat ,file = "plots/calc_log_Rt_geo_day.xlsx", row.names = FALSE)
 
-
+#
 ## reorder levels of geo region 
 
 
@@ -614,12 +613,12 @@ p <- ggplot(data= log_Mean_Rt_summary.dat, aes(x=geo_region_factor,y=emmean, fil
   geom_bar(stat="identity",position="dodge") +
   geom_errorbar(position=position_dodge(.9),width=.25, aes(ymax=upper.CL, ymin=lower.CL),alpha=0.3) +
   geom_text(aes(label=sprintf("%0.2f", round(emmean, digits = 2))), position=position_dodge(width=0.9), vjust=-0.5,size=3.5) +
-  labs(x="Geographic region", y="Rt Mean", fill="Mid day",
-       title = "Rt Mean predictions for combinations of Mid day and Region  (Rt mean window - 30 - 150 days)
-              \n (Adjusted model multivariate model )") +
-  coord_cartesian(ylim = c(0.70, 1.2) )
+  labs( fill="Range of start dates for calculation of mean", title = "") +
+  xlab("Geographic region") +
+  ylab(expression("Mean of "*italic(R[t])*"")) +
+  coord_cartesian(ylim = c(0.50, 1.3) )
 p
-ggsave("PM_test_results/lm_log_Rtmean_geo_adj_bar-30-150.png",p,  width=30, height=15, units="cm")
+ggsave( paste0(dir_results,"lm_log_Rtmean_geo_adj_bar-30-150.png"),p,  width=30, height=15, units="cm")
 
 
 # ggplot(data= log_Mean_Rt_summary.dat, aes(x=geo_region_factor,y=emmean, fill=start_day_group)) +
