@@ -103,14 +103,14 @@ gc()
 
 ### Step 5 Peak prediction forecasting 
 
-# source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_implementation.R"),echo=TRUE)
+# source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"),echo=TRUE)
 # 
 # today <- Sys.Date()
 # today <- format(today, format="%d-%B-%Y")
 # log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
 # sink(file=log_file,append=TRUE)
 # print("Step 5 - Forecasting -  current time")
-# now_time <- Sys.time() 
+# now_time <- Sys.time()
 # print(now_time)
 # closeAllConnections()
 
