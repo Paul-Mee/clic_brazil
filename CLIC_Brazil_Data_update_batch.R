@@ -103,7 +103,7 @@ gc()
 
 ### Step 5 Peak prediction forecasting 
 
-# source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"),echo=TRUE)
+ source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"),echo=TRUE)
 # 
 # today <- Sys.Date()
 # today <- format(today, format="%d-%B-%Y")
