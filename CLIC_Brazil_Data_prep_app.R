@@ -65,7 +65,7 @@ load(fname)
 # Calculate total cases
 c_dat <- BigStandard$standardised_incidence
 
-c_dat <- BigStandard$standardised_incidence
+
 
 date_max <- max(c_dat$date_end)
 c_dat <- c_dat %>% dplyr::filter(c_dat$date_end==date_max)
