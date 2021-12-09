@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 
 ####
 #### Code to call the Peak Prediction application 
 ####
+=======
+##
+#### this needs to be edited to work in the main data pipeline
+>>>>>>> a6fb58f0e24764542b7eefb9f51f38778744fcbf
 
 require(MASS)
 require(survival)
