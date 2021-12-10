@@ -4,8 +4,12 @@
 ## Paul Mee 8th June 2021
 ###
 
-setwd("C:/CADDE_dropbox/Dropbox/COVID_cities/lacpt")
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+
+setwd(dir_app_data)
+
 library(rsconnect)
+
 deployApp(appName="lacpt", 
           account="cmmid-lshtm", 
           forceUpdate = getOption("rsconnect.force.update.apps", TRUE),
