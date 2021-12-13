@@ -15,7 +15,7 @@ require(sf)
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 
-log_fil_dir <- "C:/CADDE_dropbox/Dropbox/COVID_cities/log_files/"
+log_fil_dir <- "C:/CADDE_Data/COVID_cities/log_files/"
 dir_scripts <- "C:/github/clic_brazil/"
 
 
@@ -103,9 +103,16 @@ gc()
 
 ### Step 5 Peak prediction forecasting 
 
+<<<<<<< HEAD
 source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"),echo=TRUE)
 
 # 
+=======
+
+source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"),echo=TRUE)
+
+
+>>>>>>> f859cf6996aee54dc9bc105f4948bccf6fe692c6
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")

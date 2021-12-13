@@ -1,5 +1,12 @@
+<<<<<<< HEAD
 
+####
+#### Code to call the Peak Prediction application 
+####
+=======
+##
 #### this needs to be edited to work in the main data pipeline
+>>>>>>> a6fb58f0e24764542b7eefb9f51f38778744fcbf
 
 require(MASS)
 require(survival)
@@ -10,34 +17,42 @@ require(plotROC)
 
 library(pROC, pos = "package:base")
 
-setwd("C:\\Users\\eidenale\\Dropbox\\COVID_cities\\draft_papers")
+##############
+### Directory set up
+### Update this with your local directories
+##############
+dir_scripts <- "C:/github/clic_brazil/"
 
-source("C:/Users/eidenale/Dropbox/COVID_cities/CC_scripts/OB_standardisation_functions.R")
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+
+# loads functions to be used for standardisation
+source(paste0(dir_scripts,"CLIC_Brazil_standardisation_functions.R"))
+this_date <- Sys.Date()
 
 
 StateRegionDF<-read.csv(
-  "C:\\Users\\eidenale\\Dropbox\\COVID_cities\\CC_data\\City_Case_data\\Brazil\\geo_data\\brazil_states_regions.csv", 
+  paste0(dir_geo_data,"brazil_states_regions.csv"),
   stringsAsFactors = FALSE, header=T)
-head(StateRegionDF)
+#head(StateRegionDF)
 
-DateSuffixVector<-rev(c(
-  "2021_07_21",
-  "2021_06_21",
-  "2021_05_21",
-  "2021_04_21",
-  "2021_03_21",
-  "2021_02_21",
-  "2021_01_21",
-  "2020_12_21",
-  "2020_11_21",
-  "2020_10_21",
-  "2020_09_21",
-  "2020_08_21",
-  "2020_07_21"
-))
 # DateSuffixVector<-rev(c(
-#   "2021_04_21"
+#   "2021_07_21",
+#   "2021_06_21",
+#   "2021_05_21",
+#   "2021_04_21",
+#   "2021_03_21",
+#   "2021_02_21",
+#   "2021_01_21",
+#   "2020_12_21",
+#   "2020_11_21",
+#   "2020_10_21",
+#   "2020_09_21",
+#   "2020_08_21",
+#   "2020_07_21"
 # ))
+DateSuffixVector<-rev(c(
+  as.character(this_date)
+ ))
 
 # summary(junk)
 
@@ -48,18 +63,12 @@ DateSuffixVector<-rev(c(
 ResultsDF<-data.frame(DateSuffix=character(), Region=character(), AUC=numeric(), 
                       threshold=numeric(), specificity=numeric(), sensitivity=numeric(),
                  stringsAsFactors=FALSE) 
-ResultsDF
+#ResultsDF
 
 RegionVector<-sort(unique(StateRegionDF$Region))
 
-# PredictDF<-junk
 
-# source("C:\\Users\\eidenale\\Dropbox\\COVID_cities\\CC_scripts\\PM_peak_batch function for paper.R")
-dir_scripts <- "C:/github/clic_brazil/"
-if(Sys.info()[['user']]=="eidenale"){
-   dir_scripts <- "C:/Users/eidenale/Documents/clic_brazil/"
-}
-source(paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+
 source(paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"))
 
 
@@ -70,7 +79,7 @@ for(j in 1:length(DateSuffixVector)){
    #    FolderName="C:\\Users\\eidenale\\Dropbox\\COVID_cities\\CC_Intermediate_data_obj_archive")
    
    PredictDF<-AUCfn(
-      FolderName="C:\\Users\\eidenale\\Dropbox\\COVID_cities\\CC_Intermediate_data_obj_archive", 
+      FolderName=dir_app_data, 
       dir_script=dir_scripts, 
       dir_data=dir_data_objects, 
       dir_covar=dir_covariates,
@@ -162,21 +171,21 @@ for(j in 1:length(DateSuffixVector)){
 # write.csv(ResultsDF, file="AUC results.csv", row.names = FALSE)
 
 # summary stats for paper
-round(tapply(
-  ResultsDF[ResultsDF$Region!="BR", "sensitivity"], 
-  ResultsDF[ResultsDF$Region!="BR", "Region"     ], mean), 2)
-round(tapply(
-  ResultsDF[ResultsDF$Region!="BR", "specificity"], 
-  ResultsDF[ResultsDF$Region!="BR", "Region"     ], mean), 2)
-round(tapply(
-  ResultsDF[ResultsDF$Region!="BR", "AUC"], 
-  ResultsDF[ResultsDF$Region!="BR", "Region"     ], mean), 2)
-round(tapply(
-  ResultsDF[ResultsDF$Region!="BR", "AUC"], 
-  ResultsDF[ResultsDF$Region!="BR", "Region"     ], min), 2)
-round(tapply(
-  ResultsDF[ResultsDF$Region!="BR", "AUC"], 
-  ResultsDF[ResultsDF$Region!="BR", "Region"     ], max), 2)
+# round(tapply(
+#   ResultsDF[ResultsDF$Region!="BR", "sensitivity"], 
+#   ResultsDF[ResultsDF$Region!="BR", "Region"     ], mean), 2)
+# round(tapply(
+#   ResultsDF[ResultsDF$Region!="BR", "specificity"], 
+#   ResultsDF[ResultsDF$Region!="BR", "Region"     ], mean), 2)
+# round(tapply(
+#   ResultsDF[ResultsDF$Region!="BR", "AUC"], 
+#   ResultsDF[ResultsDF$Region!="BR", "Region"     ], mean), 2)
+# round(tapply(
+#   ResultsDF[ResultsDF$Region!="BR", "AUC"], 
+#   ResultsDF[ResultsDF$Region!="BR", "Region"     ], min), 2)
+# round(tapply(
+#   ResultsDF[ResultsDF$Region!="BR", "AUC"], 
+#   ResultsDF[ResultsDF$Region!="BR", "Region"     ], max), 2)
 
 # run from here if reusing AUC
 # but need RegionVector, see above
@@ -191,17 +200,17 @@ head(ResultsDF)
 # lacptDF<-read.csv("C:\\Users\\eidenale\\work\\project\\other\\Zika\\CADDE\\COVID\\Manaus\\data_covid19_lacpt_2021-02-18.csv", stringsAsFactors = FALSE)
 # lacptDF<-read.csv("C:\\Users\\eidenale\\work\\project\\other\\Zika\\CADDE\\COVID\\Manaus\\data_covid19_lacpt_2021-03-27.csv", stringsAsFactors = FALSE)
 # lacptDF<-read.csv("C:\\Users\\eidenale\\work\\project\\other\\Zika\\CADDE\\COVID\\Manaus\\data-2021-07-01.csv", stringsAsFactors = FALSE)
-lacptDF<-read.csv("C:\\Users\\eidenale\\work\\project\\other\\Zika\\CADDE\\COVID\\Manaus\\data-2021-08-11.csv", stringsAsFactors = FALSE)
-dim(lacptDF)
+#lacptDF<-read.csv("C:\\Users\\eidenale\\work\\project\\other\\Zika\\CADDE\\COVID\\Manaus\\data-2021-08-11.csv", stringsAsFactors = FALSE)
+#dim(lacptDF)
 # head(lacptDF[,1:10])
 # head(lacptDF[,c("city_state", "area", "region", "date_end", "cum_cases")])
-head(lacptDF[,c("area", "region", "date_end", "cum_cases")])
+#head(lacptDF[,c("area", "region", "date_end", "cum_cases")])
 # "region" is really state
-names(lacptDF)<-ifelse(names(lacptDF)=="region", "State", names(lacptDF))
+#names(lacptDF)<-ifelse(names(lacptDF)=="region", "State", names(lacptDF))
 # names(lacptDF)
-dim(lacptDF)
-lacptDF<-merge(x=lacptDF, y=StateRegionDF, by="State", all.x=T, all.y=F)
-dim(lacptDF)
+# dim(lacptDF)
+# lacptDF<-merge(x=lacptDF, y=StateRegionDF, by="State", all.x=T, all.y=F)
+# dim(lacptDF)
 
 lacptDF<-lacptDF[, c("date_end", "cum_cases", "area", "Region", "date_end", "cum_cases")]
 
