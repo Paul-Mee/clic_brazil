@@ -7,6 +7,7 @@ require(jsonlite)
 require(dplyr)
 require(reshape2)
 require(data.table)
+require(covid19br)
 
 ### Data clean up
 
@@ -29,20 +30,54 @@ today <- format(today, format="%d-%B-%Y")
 ### API call to get data 
 #############
 
-
+### Brazil.IO data 
 ## Get all data in csv format 
-brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
-brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
+# brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
+# brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
+# 
+# 
+# 
+# row.names(brazil_cases) <- brazil_cases[,1]
+# # transpose data 
+# brazil_cases <- t(brazil_cases[,-1])
+# # delete row names
+# row.names(brazil_cases) <- c()
+# 
+# brazil_cases <- data.table::data.table(brazil_cases)
 
+# Fromat dates
+# brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
 
+## Keep city level data 
+# brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
 
-row.names(brazil_cases) <- brazil_cases[,1]
-# transpose data 
-brazil_cases <- t(brazil_cases[,-1])
-# delete row names
-row.names(brazil_cases) <- c()
+#####
 
-brazil_cases <- data.table::data.table(brazil_cases)
+# Brazil MoH data
+
+### Get Brazil MoH COVID data 
+
+cities.dt <- covid19br::downloadCovid19("cities")
+
+### rename variables for compatibility with previous code
+
+cities.dt$confirmed <- cities.dt$accumCases
+cities.dt$deaths <- cities.dt$accumDeaths
+cities.dt$city_ibge_code <- cities.dt$city_code
+
+### Select only those places where city name is not blank
+
+cities.dt <-filter(cities.dt , city!="")
+
+### Convert to dataframe
+
+#cities.df <- as.data.frame(cities.df)
+
+### New dt subset of columns
+
+vars <- c("date", "state", "city" , "confirmed" , "deaths" , "city_ibge_code")
+brazil_cases <- cities.dt[, ..vars]
+
 
 
 
@@ -54,17 +89,13 @@ brazil_cases <- data.table::data.table(brazil_cases)
 #############
 
 # ### Cases data 
-# # Code to read in  Brazil.io data and reformat in correct format
-#brazil_cases_dat <- data.frame(brazil_io_full)
-brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
+
 
 brazil_cases_dat  <- brazil_cases
 
 ## to test limiting to data until end of Sept 2020
 #brazil_cases_dat <- brazil_cases_dat %>% dplyr::filter(date < as.Date("30-09-2020","%d-%m-%Y"))
 
-## Keep city level data 
-brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
 # Remove cases which cannot be assigned to a particular municipality 
 brazil_cases_dat <- brazil_cases_dat[ which(!brazil_cases_dat$city=='Importados/Indefinidos'),]
 
