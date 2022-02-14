@@ -104,7 +104,7 @@ gc()
 ### Step 5 Peak prediction forecasting 
 
 
-source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_function.R"),echo=TRUE)
+source (paste0(dir_scripts,"CLIC_Brazil_peak_pred_implementation.R"),echo=TRUE)
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
@@ -172,14 +172,17 @@ closeAllConnections()
 
 ### Step 9   Deploy app 
 
-# source (paste0(dir_scripts,"CLIC_Brazil_deploy_app.R"),echo=TRUE)
+
+source ("C:/CADDE_Data/scripts/connect_script.R",echo=TRUE)
+
+source (paste0(dir_scripts,"CLIC_Brazil_deploy_app.R"),echo=TRUE)
 # 
-# today <- Sys.Date()
-# today <- format(today, format="%d-%B-%Y")
-# log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
-# sink(file=log_file,append=TRUE)
-# print("Step 9 Deploy the app to the CMMID server")
-# now_time <- Sys.time() 
-# print(now_time)
-# closeAllConnections()
+ today <- Sys.Date()
+ today <- format(today, format="%d-%B-%Y")
+log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
+ sink(file=log_file,append=TRUE)
+ print("Step 9 Deploy the app to the CMMID server")
+ now_time <- Sys.time() 
+ print(now_time)
+ closeAllConnections()
 

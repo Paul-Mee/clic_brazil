@@ -4,9 +4,15 @@
 ## Paul Mee 8th June 2021
 ###
 
-source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 
-setwd(dir_app_data)
+###############
+### Directory set up
+### Update this with your local directories
+###############
+dir_scripts <- "C:/github/clic_brazil/"
+
+source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
+setwd(dir_app)
 
 library(rsconnect)
 

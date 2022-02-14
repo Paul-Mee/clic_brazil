@@ -218,7 +218,7 @@ for(i in 1:length(Geographic_scale_opts)){
 }
 
 # save pre-compiled plots
-cur_filename <- paste0(dir_app_data,"Trends_plots_test.RData")
+cur_filename <- paste0(dir_app_data,"Trends_plots_list.RData")
 save(Trends_plot_list, file = cur_filename)
 
 

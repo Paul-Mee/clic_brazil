@@ -114,7 +114,7 @@ peakSF <- st_as_sf(peakDF, coords = c("X", "Y"))
 
 
 
-load(file.path(paste0(dir_app_data,"Trends_plots_test.RData")))
+load(file.path(paste0(dir_app_data,"Trends_plots_list.RData")))
 
 # Load State names and abbreviations
 states <- readRDS(paste0(dir_app_data,"statesBR.RDS")) %>%
