@@ -1,4 +1,6 @@
-### R script to process Brazil.IO case data 
+
+######################################
+### R script to process Brazil case data 
 ###############################################
 
 ### Required libraries
@@ -24,7 +26,7 @@ source (paste0(dir_scripts,"CLIC_Brazil_Script_directories.R"))
 today <- Sys.Date()
 today <- format(today, format="%d-%B-%Y")
 
-#test
+
 
 ##############
 ### API call to get data 
@@ -35,21 +37,26 @@ today <- format(today, format="%d-%B-%Y")
 # brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
 # brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
 # 
-# 
-# 
-# row.names(brazil_cases) <- brazil_cases[,1]
-# # transpose data 
-# brazil_cases <- t(brazil_cases[,-1])
-# # delete row names
-# row.names(brazil_cases) <- c()
-# 
-# brazil_cases <- data.table::data.table(brazil_cases)
+#  row.names(brazil_cases) <- brazil_cases[,1]
+#  # transpose data 
+#  brazil_cases <- t(brazil_cases[,-1])
+#  # delete row names
+#  row.names(brazil_cases) <- c()
+#  
+#  brazil_cases <- data.table::data.table(brazil_cases)
+# # 
+# # Format dates
+#  brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
+# # 
+# # Keep city level data 
+#   brazil_cases_io <- brazil_cases[ which(brazil_cases$place_type=='city'),]
+# # Encode city names correctly  
+#   Encoding(brazil_cases_io$city) <- "UTF-8"
+#   
+#   vars <- c("date", "state", "city" , "confirmed" , "deaths" , "city_code")
+#   brazil_cases_io <- brazil_cases_io[, ..vars]  
 
-# Fromat dates
-# brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
-
-## Keep city level data 
-# brazil_cases_dat <- brazil_cases_dat[ which(brazil_cases_dat$place_type=='city'),]
+# brazil_cases_dat  <- brazil_cases_io
 
 #####
 
@@ -63,27 +70,34 @@ cities.dt <- covid19br::downloadCovid19("cities")
 
 cities.dt$confirmed <- cities.dt$accumCases
 cities.dt$deaths <- cities.dt$accumDeaths
-cities.dt$city_ibge_code <- cities.dt$city_code
+
 
 ### Select only those places where city name is not blank
 
 cities.dt <-filter(cities.dt , city!="")
 
-### Convert to dataframe
 
-#cities.df <- as.data.frame(cities.df)
+### Convert to 7 digit ibge codes
+### Format IBGE code to as character
+cities.dt$city_ibge_code <- as.character(cities.dt$city_code)
+## Read IBGE data 
+ibge_sd.df <- read.csv(paste0(dir_ibge_data,'Municipalities_sociodemographics_chars_UNICODE.csv'))
+## Keep only IBGE code column and name
+ibge_data.df <- ibge_sd.df[c("Codigo","Munic_pio")]
+## Create column with with 6 digits
+ibge_data.df$ibge_code_6 <- substring( as.character(ibge_data.df$Codigo),1,6)
+## Merge with existing data 
+cities.dt <- merge(cities.dt,ibge_data.df,by.x='city_ibge_code',by.y='ibge_code_6')
+
 
 ### New dt subset of columns
 
-vars <- c("date", "state", "city" , "confirmed" , "deaths" , "city_ibge_code")
-brazil_cases <- cities.dt[, ..vars]
+vars <- c("date", "state", "city" , "confirmed" , "deaths" , "Codigo")
+brazil_cases_moh <- cities.dt[, ..vars]
 
-### Filter for data since March 2021 to speed up data standardisation 
+names(brazil_cases_moh)[6] <- "city_code"
 
-brazil_cases <-  brazil_cases[(brazil_cases$date >= "2021-03-01"),]
-
-
-
+brazil_cases_dat  <- brazil_cases_moh
 
 #fname <- paste0(dir_source_data,"brazil_raw_cases_api_", today,".csv")
 #write.csv(brazil_io_full,file = fname,row.names=FALSE)
@@ -95,12 +109,10 @@ brazil_cases <-  brazil_cases[(brazil_cases$date >= "2021-03-01"),]
 # ### Cases data 
 
 
-brazil_cases_dat  <- brazil_cases
+brazil_cases_dat  <- brazil_cases_moh
 
 ## to test limiting to data until end of Sept 2020
 #brazil_cases_dat <- brazil_cases_dat %>% dplyr::filter(date < as.Date("30-09-2020","%d-%m-%Y"))
-
-### Filter for data since March 2021
 
 # Remove cases which cannot be assigned to a particular municipality 
 brazil_cases_dat <- brazil_cases_dat[ which(!brazil_cases_dat$city=='Importados/Indefinidos'),]
@@ -247,7 +259,7 @@ brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), 
 brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), death_cum=cumsum(death_inc))
 
 ## Encoding city names
-brazil_cases_dat_fill$city <- as.character(brazil_cases_dat_fill$city)
+#brazil_cases_dat_fill$city <- as.character(brazil_cases_dat_fill$city)
 #Encoding(brazil_cases_dat_fill$city) <- "UTF-8"
 
 ### Keep only cumulative totals
@@ -272,12 +284,12 @@ brazil_cases_dat_fill <- brazil_cases_dat_fill[with(brazil_cases_dat_fill, order
 ## Getting case data in right format
 
 brazil_cases_dat_output <- reshape2::dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
-                            brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "cases")
+                                             brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "cases")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
 names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)] <- paste("X",substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],9,10),"_",
-                                                           substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],6,7),"_",
-                                                           substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],1,4),sep="")
+                                                                         substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],6,7),"_",
+                                                                         substring(names(brazil_cases_dat_output)[4:ncol(brazil_cases_dat_output)],1,4),sep="")
 ## Replace NA with 0
 brazil_cases_dat_output[is.na(brazil_cases_dat_output)] <- 0
 
@@ -293,25 +305,25 @@ brazil_cases_dat_output$City_ibge_code <- as.numeric(as.character(brazil_cases_d
 fname <- paste0(dir_daily_data,"brazil_daily_cases_ibge_api_", today,".csv")
 fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api.RDS")
 
-#write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
+write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_cases_dat_output, file = fname_RDS) 
 
 
 
- 
+
 # ################
 # ### Deaths data 
 # ################
 ## Getting death data in right format
 
 brazil_deaths_dat_output <- reshape2::dcast(brazil_cases_dat_fill, brazil_cases_dat_fill$State + brazil_cases_dat_fill$Area_Name + 
-                            brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "deaths")
+                                              brazil_cases_dat_fill$City_ibge_code~brazil_cases_dat_fill$date, value.var = "deaths")
 
 ## substrings of column names to get correct data format from yyyy-mm-dd to Xdd_mm_yyyy
 names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)] <- paste("X",substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],9,10),"_",
-                                                           substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],6,7),"_",
-                                                           substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],1,4),sep="")
+                                                                           substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],6,7),"_",
+                                                                           substring(names(brazil_deaths_dat_output)[4:ncol(brazil_deaths_dat_output)],1,4),sep="")
 ## Replace NA with 0
 brazil_deaths_dat_output[is.na(brazil_deaths_dat_output)] <- 0
 
@@ -328,7 +340,7 @@ fname <- paste0(dir_daily_data,"brazil_daily_deaths_ibge_api_", today,".csv")
 fname_RDS <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api.RDS")
 
 ## Save csv file
-#write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
+write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_deaths_dat_output, file = fname_RDS) 
 
