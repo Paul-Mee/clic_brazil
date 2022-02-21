@@ -21,7 +21,7 @@ dir_scripts <- "C:/github/clic_brazil/"
 
 
 now_time <- Sys.time() 
-log_file <- paste0(log_fil_dir,"br_data_batch-", today,".log")
+log_file <- paste0(log_fil_dir,"br_data_batch", today,".log")
 sink(file=log_file,append=FALSE)
 print(now_time)
 print( "Start time")

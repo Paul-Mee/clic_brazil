@@ -78,6 +78,10 @@ cities.dt <-filter(cities.dt , city!="")
 vars <- c("date", "state", "city" , "confirmed" , "deaths" , "city_ibge_code")
 brazil_cases <- cities.dt[, ..vars]
 
+### Filter for data since March 2021 to speed up data standardisation 
+
+brazil_cases <-  brazil_cases[(brazil_cases$date >= "2021-03-01"),]
+
 
 
 
@@ -95,6 +99,8 @@ brazil_cases_dat  <- brazil_cases
 
 ## to test limiting to data until end of Sept 2020
 #brazil_cases_dat <- brazil_cases_dat %>% dplyr::filter(date < as.Date("30-09-2020","%d-%m-%Y"))
+
+### Filter for data since March 2021
 
 # Remove cases which cannot be assigned to a particular municipality 
 brazil_cases_dat <- brazil_cases_dat[ which(!brazil_cases_dat$city=='Importados/Indefinidos'),]
@@ -242,7 +248,7 @@ brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), 
 
 ## Encoding city names
 brazil_cases_dat_fill$city <- as.character(brazil_cases_dat_fill$city)
-Encoding(brazil_cases_dat_fill$city) <- "UTF-8"
+#Encoding(brazil_cases_dat_fill$city) <- "UTF-8"
 
 ### Keep only cumulative totals
 brazil_cases_dat_fill <- brazil_cases_dat_fill[c(1,2,3,4,7,8)]
@@ -287,7 +293,7 @@ brazil_cases_dat_output$City_ibge_code <- as.numeric(as.character(brazil_cases_d
 fname <- paste0(dir_daily_data,"brazil_daily_cases_ibge_api_", today,".csv")
 fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api.RDS")
 
-write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
+#write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_cases_dat_output, file = fname_RDS) 
 
@@ -322,7 +328,7 @@ fname <- paste0(dir_daily_data,"brazil_daily_deaths_ibge_api_", today,".csv")
 fname_RDS <- paste0(dir_formatted_death_data,"brazil_daily_deaths_ibge_api.RDS")
 
 ## Save csv file
-write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
+#write.csv(brazil_deaths_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_deaths_dat_output, file = fname_RDS) 
 
