@@ -35,28 +35,30 @@ today <- format(today, format="%d-%B-%Y")
 ### Brazil.IO data 
 ## Get all data in csv format 
 # brazil_io_csv <- scan (gzcon(rawConnection(content( GET("https://data.brasil.io/dataset/covid19/caso.csv.gz")))),what="",sep="\n")  
-# brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
+#  brazil_cases <- data.frame(strsplit(brazil_io_csv, ",")) 
 # 
 #  row.names(brazil_cases) <- brazil_cases[,1]
-#  # transpose data 
+# #  # transpose data 
 #  brazil_cases <- t(brazil_cases[,-1])
-#  # delete row names
-#  row.names(brazil_cases) <- c()
-#  
-#  brazil_cases <- data.table::data.table(brazil_cases)
+# # delete row names
+# row.names(brazil_cases) <- c()
+# #  
+# brazil_cases <- data.table::data.table(brazil_cases)
 # # 
-# # Format dates
+# # # Format dates
 #  brazil_cases$date <- as.Date(brazil_cases$date, format = "%Y-%m-%d")
-# # 
-# # Keep city level data 
-#   brazil_cases_io <- brazil_cases[ which(brazil_cases$place_type=='city'),]
-# # Encode city names correctly  
-#   Encoding(brazil_cases_io$city) <- "UTF-8"
-#   
-#   vars <- c("date", "state", "city" , "confirmed" , "deaths" , "city_code")
-#   brazil_cases_io <- brazil_cases_io[, ..vars]  
-
-# brazil_cases_dat  <- brazil_cases_io
+# # # 
+# # # Keep city level data 
+# brazil_cases_io <- brazil_cases[ which(brazil_cases$place_type=='city'),]
+# # # Encode city names correctly  
+#  Encoding(brazil_cases_io$city) <- "UTF-8"
+# #   
+#  vars <- c("date", "state", "city" , "confirmed" , "deaths" , "city_ibge_code")
+#  brazil_cases_io <- brazil_cases_io[, ..vars]  
+#  
+#  names(brazil_cases_io)[6] <- "city_ibge_code"
+# 
+#  brazil_cases_dat  <- brazil_cases_io
 
 #####
 
@@ -65,9 +67,9 @@ today <- format(today, format="%d-%B-%Y")
 ### Get Brazil MoH COVID data 
 
 cities.dt <- covid19br::downloadCovid19("cities")
-
-### rename variables for compatibility with previous code
-
+# 
+# ### rename variables for compatibility with previous code
+# 
 cities.dt$confirmed <- cities.dt$accumCases
 cities.dt$deaths <- cities.dt$accumDeaths
 
@@ -76,31 +78,30 @@ cities.dt$deaths <- cities.dt$accumDeaths
 
 cities.dt <-filter(cities.dt , city!="")
 
-
 ### Convert to 7 digit ibge codes
 ### Format IBGE code to as character
 cities.dt$city_ibge_code <- as.character(cities.dt$city_code)
 ## Read IBGE data 
 ibge_sd.df <- read.csv(paste0(dir_ibge_data,'Municipalities_sociodemographics_chars_UNICODE.csv'))
-## Keep only IBGE code column and name
+# ## Keep only IBGE code column and name
 ibge_data.df <- ibge_sd.df[c("Codigo","Munic_pio")]
 ## Create column with with 6 digits
 ibge_data.df$ibge_code_6 <- substring( as.character(ibge_data.df$Codigo),1,6)
-## Merge with existing data 
+# ## Merge with existing data 
 cities.dt <- merge(cities.dt,ibge_data.df,by.x='city_ibge_code',by.y='ibge_code_6')
-
-
-### New dt subset of columns
-
+# 
+# 
+# ### New dt subset of columns
+# 
 vars <- c("date", "state", "city" , "confirmed" , "deaths" , "Codigo")
 brazil_cases_moh <- cities.dt[, ..vars]
-
-names(brazil_cases_moh)[6] <- "city_code"
-
+# 
+names(brazil_cases_moh)[6] <- "city_ibge_code"
+# 
 brazil_cases_dat  <- brazil_cases_moh
 
-#fname <- paste0(dir_source_data,"brazil_raw_cases_api_", today,".csv")
-#write.csv(brazil_io_full,file = fname,row.names=FALSE)
+fname <- paste0(dir_source_data,"brazil_raw_cases_api_", today,".csv")
+write.csv(brazil_cases_moh,file = fname,row.names=FALSE)
 
 ##############
 ### STEP 1 Data formatting from API download format  
@@ -109,11 +110,11 @@ brazil_cases_dat  <- brazil_cases_moh
 # ### Cases data 
 
 
-brazil_cases_dat  <- brazil_cases_moh
 
-## to test limiting to data until end of Sept 2020
-#brazil_cases_dat <- brazil_cases_dat %>% dplyr::filter(date < as.Date("30-09-2020","%d-%m-%Y"))
+## to test limiting data by date
 
+#brazil_cases_dat <-filter(brazil_cases_dat, date >= as.Date("01-08-2021","%d-%m-%Y"))
+ 
 # Remove cases which cannot be assigned to a particular municipality 
 brazil_cases_dat <- brazil_cases_dat[ which(!brazil_cases_dat$city=='Importados/Indefinidos'),]
 
@@ -258,9 +259,7 @@ print(paste( "The total number of deaths after correction = " , as.character(sum
 brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), case_cum=cumsum(case_inc))
 brazil_cases_dat_fill <- mutate(group_by(brazil_cases_dat_fill,city_ibge_code), death_cum=cumsum(death_inc))
 
-## Encoding city names
-#brazil_cases_dat_fill$city <- as.character(brazil_cases_dat_fill$city)
-#Encoding(brazil_cases_dat_fill$city) <- "UTF-8"
+
 
 ### Keep only cumulative totals
 brazil_cases_dat_fill <- brazil_cases_dat_fill[c(1,2,3,4,7,8)]
@@ -268,7 +267,7 @@ brazil_cases_dat_fill <- brazil_cases_dat_fill[c(1,2,3,4,7,8)]
 
 
 ### get data in the format date(yyyy-mm-dd),Area_Name,State,confirmed,city_ibge_code for cases data.table
-### get data in the format date(yyyy-mm-dd),Area_Name,State,deaths,city_ibge_code for deaths data.table
+
 
 names(brazil_cases_dat_fill)[1] <- "date"
 names(brazil_cases_dat_fill)[3] <- "Area_Name"
@@ -304,11 +303,14 @@ brazil_cases_dat_output$City_ibge_code <- as.numeric(as.character(brazil_cases_d
 
 fname <- paste0(dir_daily_data,"brazil_daily_cases_ibge_api_", today,".csv")
 fname_RDS <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api.RDS")
+#fname_RDS_moh <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api_MOH.RDS")
+#fname_RDS_io <- paste0(dir_formatted_case_data,"brazil_daily_cases_ibge_api_IO.RDS")
 
 write.csv(brazil_cases_dat_output,file = fname,row.names=FALSE)
 ### Saving as RDS file
 saveRDS(brazil_cases_dat_output, file = fname_RDS) 
-
+#saveRDS(brazil_cases_dat_output, file = fname_RDS_moh) 
+#saveRDS(brazil_cases_dat_output, file = fname_RDS_io)
 
 
 
