@@ -76,7 +76,7 @@ cities.dt$deaths <- cities.dt$accumDeaths
 
 ### Select only those places where city name is not blank
 
-cities.dt <-filter(cities.dt , city!="")
+cities.dt <- dplyr::filter(cities.dt , city!="")
 
 ### Convert to 7 digit ibge codes
 ### Format IBGE code to as character
